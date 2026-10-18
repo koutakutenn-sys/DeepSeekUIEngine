@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+.cache/
+*.local
+.env
+.env.*
+# Local agent instructions and project planning documents
+AGENTS.md
+AGENTS.md.disable
+agents.md
+agents.md.disable
+DEVELOPMENT-ENVIRONMENT.md
+DEVELOPMENT-ENVIRONMENT.md.disable
+FEATURES.md
+features.md
+docs/superpowers/

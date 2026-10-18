@@ -1,0 +1,167 @@
+import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
+import { resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { metrics, chart, table, timeline, payload } from '../fixtures';
+
+const fixture = `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><title>DeepSeek DOM test fixture</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#fff;color:#20242c;font:14px/1.8 system-ui} main{max-width:760px;margin:auto;padding:32px 20px} .kicker{color:#89909d;font-size:11px;letter-spacing:.15em}h1{font-size:24px;font-weight:550;margin:5px 0 24px}article{margin:24px 0}.ds-markdown>p{color:#747c8a}.ds-code-block{display:block}form{margin:24px 0;display:flex;gap:10px}textarea{flex:1;min-width:0;border:1px solid #e1e5ed;border-radius:12px;padding:14px;font:inherit}button{border:0;border-radius:10px;padding:10px 16px;background:#4d6bfe;color:white;cursor:pointer}.dark body{background:#191a1f;color:#edeef2}pre{white-space:pre-wrap;overflow-wrap:anywhere}#sent{font-size:11px;max-height:150px;overflow:auto}
+</style></head><body><main><div class="kicker">DEEPSEEK UI ENGINE · LOCAL TEST</div><h1>信息，以更清晰的方式呈现。</h1>
+<article class="ds-message" id="first"><div class="ds-markdown ds-assistant-message-main-content"><p>这是根据你提供的数据整理的概览。</p><div class="md-code-block md-code-block-light"><div class="md-code-block-banner-wrap"><div class="md-code-block-banner"><div><span>dsui</span></div><div role="button"><span>复制</span></div></div></div><pre><span id="stream"></span></pre></div></div></article>
+<article class="ds-message" id="second"><div class="ds-markdown ds-assistant-message-main-content"><p>接下来是项目的推进计划。</p><div class="md-code-block"><div class="md-code-block-banner"><span>json</span></div><pre><span id="timeline"></span></pre></div></div></article>
+<article class="ds-message"><div class="user-content">{"protocol":"dsui","version":1,"blocks":[]}</div></article>
+<div id="composer-fixture"></div></main><script src="/__fixture.js"></script></body></html>`;
+
+let context: BrowserContext;
+let page: Page;
+let popup: Page;
+
+test.beforeAll(async () => {
+  const extension = resolve('dist');
+  context = await chromium.launchPersistentContext(resolve(`.cache/e2e-profiles/run-${Date.now()}`), {
+    channel: 'chromium', headless: true, timeout: 15_000, viewport: { width: 1024, height: 1000 },
+    args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
+  });
+  page = await context.newPage();
+  await page.route('https://chat.deepseek.com/**', async (route) => {
+    if (route.request().url().endsWith('/__fixture.js')) {
+      await route.fulfill({ contentType: 'application/javascript', body: await readFile('.cache/e2e-fixture/composer.js', 'utf8') });
+    } else {
+      const body = route.request().url().endsWith('/a/chat/s/seeded')
+        ? fixture.replace('<div class="user-content">', '<div class="user-content">&lt;!-- DSUI:v1 --&gt;会话格式说明&lt;!-- /DSUI --&gt;') : fixture;
+      await route.fulfill({ contentType: 'text/html', body });
+    }
+  });
+  const session = await context.newCDPSession(page);
+  const contexts: { id: number; name: string }[] = [];
+  session.on('Runtime.executionContextCreated', ({ context: execution }) => { contexts.push(execution); });
+  await session.send('Runtime.enable');
+  await page.goto('https://chat.deepseek.com/');
+  let extensionId = '';
+  await expect.poll(async () => {
+    for (const execution of contexts) {
+      try {
+        const result = await session.send('Runtime.evaluate', { contextId: execution.id,
+          expression: 'globalThis.chrome?.runtime?.id', returnByValue: true });
+        if (typeof result.result.value === 'string') extensionId = result.result.value;
+      } catch { /* Navigation invalidates older execution contexts. */ }
+    }
+    return extensionId;
+  }).toMatch(/^[a-p]{32}$/);
+  popup = await context.newPage();
+  await popup.setViewportSize({ width: 360, height: 560 });
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  await expect(popup.getByRole('radio', { name: /Auto/ })).toBeEnabled();
+  await popup.getByRole('radio', { name: /Auto/ }).check();
+});
+
+test.afterAll(async () => { await context?.close(); });
+
+test('loads the actual MV3 extension, renders four components, updates streams and restores Off', async ({}, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  await page.locator('#stream').evaluate((node) => { node.textContent = '{"protocol":"dsui",'; });
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload([metrics, chart, table]));
+  await page.locator('#timeline').evaluate((node, text) => { node.textContent = text; }, payload([timeline]));
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(2);
+  await expect(page.locator('#stream')).not.toBeVisible();
+  await expect(page.getByText('1,280', { exact: false })).toBeVisible();
+  await expect(page.locator('.recharts-bar-rectangle')).toHaveCount(2);
+  await page.getByRole('button', { name: /得分/ }).click();
+  await page.getByRole('button', { name: /得分/ }).click();
+  const tableRows = page.getByRole('table', { name: '对比详情', exact: true }).getByRole('row');
+  await expect(tableRows.nth(1).getByRole('cell').first()).toHaveText('A');
+  await page.getByText('调研', { exact: true }).click();
+  await expect(page.getByText('整理需求与使用场景', { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('light.png'), fullPage: true });
+  await page.locator('html').evaluate((node) => node.classList.add('dark'));
+  await expect(page.locator('[data-dsui-host]').first()).toHaveAttribute('data-theme', 'dark');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('dark-mobile.png'), fullPage: true });
+  await popup.getByRole('radio', { name: /Off/ }).check();
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  await expect(page.locator('#stream')).toBeVisible();
+  await popup.getByRole('radio', { name: /Force/ }).check();
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(2);
+  await page.locator('#stream').evaluate((node) => { node.textContent += 'invalid'; });
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(1);
+  await expect(page.locator('#stream')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  await expect(popup.getByRole('radio', { name: /Force/ })).toBeChecked();
+  expect(errors).toEqual([]);
+  await popup.screenshot({ path: testInfo.outputPath('popup.png') });
+});
+
+test('activates only by its button, preserves drafts, and leaves ordinary chat verbatim', async ({}, testInfo) => {
+  await page.goto('https://chat.deepseek.com/');
+  const input = page.getByRole('textbox', { name: '消息' });
+  await popup.getByRole('radio', { name: /Auto/ }).check();
+  const enable = page.getByRole('button', { name: '启用 UI', exact: true });
+  await expect(enable).toBeEnabled();
+  await input.fill('尚未发送的草稿');
+  await expect(enable).toBeDisabled();
+  await expect(input).toHaveValue('尚未发送的草稿');
+  await input.fill('');
+  await expect(enable).toBeEnabled();
+  await input.fill('比较这两组数据');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('比较这两组数据');
+  await enable.click();
+  await expect(page.locator('#sent')).toContainText('为当前会话启用 UI');
+  await expect(page.locator('#sent')).toContainText('<!-- DSUI:v1 -->');
+  await expect(input).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'UI 已启用', exact: true })).toBeDisabled();
+  await page.screenshot({ path: testInfo.outputPath('manual-enabled.png'), fullPage: true });
+  await input.fill('再给一个表格');
+  await page.locator('[role="button"].ds-button--primary.ds-button--circle').click();
+  await expect(page.locator('#sent')).toHaveText('再给一个表格');
+  await popup.getByRole('radio', { name: /Force/ }).check();
+  await input.fill('继续展示图表');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('继续展示图表');
+  await popup.getByRole('radio', { name: /Off/ }).check();
+  await expect(page.locator('[data-dsui-activation-host]')).toHaveCount(0);
+  await input.fill('普通聊天');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('普通聊天');
+  await input.fill('换行草稿');
+  await input.press('Shift+Enter');
+  await expect(input).toHaveValue('换行草稿\n');
+});
+
+test('tracks manual activation across assigned IDs, new chats, and loaded history after refresh', async () => {
+  await popup.getByRole('radio', { name: /Auto/ }).check();
+  await page.goto('https://chat.deepseek.com/');
+  const input = page.getByRole('textbox', { name: '消息' });
+  await page.getByRole('button', { name: '启用 UI', exact: true }).click();
+  await expect(page.locator('#sent')).toContainText('<!-- DSUI:v1 -->');
+  await expect(page.getByRole('button', { name: 'UI 已启用', exact: true })).toBeDisabled();
+  await page.evaluate(() => { history.replaceState(null, '', '/a/chat/s/created'); });
+  await expect(page.getByRole('button', { name: 'UI 已启用', exact: true })).toBeDisabled();
+  await input.fill('继续用柱状图展示');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('继续用柱状图展示');
+  await page.evaluate(() => { history.replaceState(null, '', '/'); });
+  await expect(page.getByRole('button', { name: '启用 UI', exact: true })).toBeEnabled();
+  await input.fill('另一个新会话的柱状图');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('另一个新会话的柱状图');
+  await page.goto('https://chat.deepseek.com/a/chat/s/seeded');
+  await expect(page.getByRole('button', { name: 'UI 已启用', exact: true })).toBeDisabled();
+  await input.fill('刷新前的图表请求');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('刷新前的图表请求');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'UI 已启用', exact: true })).toBeDisabled();
+  await input.fill('刷新后的图表请求');
+  await input.press('Enter');
+  await expect(page.locator('#sent')).toHaveText('刷新后的图表请求');
+  // The URL changes before React clears the previous conversation's messages.
+  await page.evaluate(() => { history.replaceState(null, '', '/'); dispatchEvent(new PopStateEvent('popstate')); });
+  await page.locator('.user-content').evaluate((node) => { node.textContent = ''; });
+  await expect(page.getByRole('button', { name: '启用 UI', exact: true })).toBeEnabled();
+});
