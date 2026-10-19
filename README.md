@@ -50,6 +50,8 @@ npm run build
 npm run test:e2e
 ```
 
+GitHub Actions 在推送到 `main`、针对 `main` 的 Pull Request 以及手动触发时，使用 Node.js 22 执行上述检查。CI 无需配置 Secret；E2E 失败时仅上传本地测试夹具的 PNG 截图，保留 3 天，不上传 trace、源码或浏览器 profile。
+
 浏览器测试会在 `.cache/ms-playwright` 下载项目私有 Chromium，并用独立测试配置加载真实构建的扩展。夹具使用从已登录官方网页观察到的代码块结构，以及真实 React 受控输入框和页面发送控件。官方域名请求由测试拦截，不发送真实聊天；覆盖五类组件、流式补全、模式切换、原文恢复、手动启用、草稿保护、普通消息原样发送、会话去重、新建会话分配 ID、历史标记刷新、排序、展开、深色及窄屏。函数图另覆盖滑块鼠标/触屏/键盘、平移缩放、双指手势和完成流追加空白时保留本地状态。截图输出到 `test-results`。模拟测试与登录后的真实页面检查分别记录。
 
 function-plot 迁移验证覆盖 32 个初等函数案例、已知数学坐标、定义域空洞与渐近线；具体命令与结果见[验证记录](docs/FUNCTION_PLOT_VALIDATION.md)。此前以全新隔离浏览器、不拦截请求访问真实官方站点收到 CloudFront HTTP 403；本次使用本地夹具，登录后官方会话中的端到端兼容性仍未验收，不能用夹具结果替代。可在常用浏览器重新加载 `dist`，登录官方网页后新建会话，启用 UI 并按协议样例复验。
@@ -68,3 +70,16 @@ function-plot 迁移验证覆盖 32 个初等函数案例、已知数学坐标�
 - 脚本和样式均随扩展打包，不加载远程代码，不执行模型提供的 HTML/JavaScript；所有文本经过 React 转义。
 - 无效、超限、未知版本或组件渲染失败时保留原始 Markdown。未完成的流式 JSON 不隐藏原文。
 - DeepSeek 网页 DOM 并非公开稳定接口。官方改版可能需要调整适配器，不能以模拟页面测试代替真实兼容性检查。
+
+## License
+
+本项目采用 [MIT License](LICENSE)。
+
+## Third-party licenses
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+for third-party copyright and license notices.
+
+构建会将该通知复制到 `dist/THIRD_PARTY_NOTICES.md`，并保留生产依赖许可证汇总 `dist/THIRD_PARTY_NOTICES.txt`。
+
+[许可证审查记录](THIRD_PARTY_LICENSE_AUDIT.md) 区分实际保留模块、补充许可来源及未解决的 `interval-arithmetic@1.1.3` BSL/MIT 范围问题。构建同时输出模块和许可证覆盖清单；审查版本或分发范围变化时须重新核对。

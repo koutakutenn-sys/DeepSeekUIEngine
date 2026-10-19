@@ -7,6 +7,8 @@ playwright-report/
 *.local
 .env
 .env.*
+.DS_Store
+docs/UI_TARGETS.md
 # Local agent instructions and project planning documents
 AGENTS.md
 AGENTS.md.disable

@@ -1,0 +1,126 @@
+{
+  "verifiedOn": "2026-10-19",
+  "method": "Published tarball integrity matches package-lock.json; listed installed files compared byte-for-byte.",
+  "packages": [
+    {
+      "name": "seedrandom",
+      "version": "3.0.5",
+      "metadataURL": "https://registry.npmjs.org/seedrandom/3.0.5",
+      "gitHead": "4460ad325a0a15273a211e509f03ae0beb99511a",
+      "repository": {
+        "url": "git://github.com/davidbau/seedrandom.git",
+        "type": "git"
+      },
+      "integrity": "sha512-8OwmbklUNzwezjGInmZ+2clQmExQPvomqjL7LFqOYqtmuxRgQYqOD3mHaU+MvZn5FLUeVxVfQjwLZW/n/JFuqg==",
+      "license": "MIT",
+      "verifiedPublishedFiles": [
+        "package.json",
+        "README.md",
+        "seedrandom.js",
+        "lib/alea.js"
+      ]
+    },
+    {
+      "name": "d3-array",
+      "version": "3.2.4",
+      "metadataURL": "https://registry.npmjs.org/d3-array/3.2.4",
+      "gitHead": "94d4541626ae3ac6c847e3d4c6e31aca1a8879b4",
+      "repository": {
+        "url": "git+https://github.com/d3/d3-array.git",
+        "type": "git"
+      },
+      "integrity": "sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==",
+      "license": "ISC",
+      "verifiedPublishedFiles": [
+        "LICENSE",
+        "src/quickselect.js",
+        "package.json",
+        "README.md"
+      ]
+    },
+    {
+      "name": "javascript-natural-sort",
+      "version": "0.7.1",
+      "metadataURL": "https://registry.npmjs.org/javascript-natural-sort/0.7.1",
+      "gitHead": null,
+      "repository": {
+        "url": "https://github.com/Bill4Time/javascript-natural-sort.git",
+        "type": "git"
+      },
+      "integrity": "sha512-nO6jcEfZWQXDhOiBtG2KvKyEptz7RVbpGP4vTD2hLBdmNQSsCiicO2Ioinv6UI4y9ukqnBpy+XZ9H6uLNgJTlw==",
+      "license": "MIT",
+      "verifiedPublishedFiles": [
+        "package.json",
+        "README.md",
+        "naturalSort.js"
+      ]
+    },
+    {
+      "name": "interval-arithmetic",
+      "version": "1.1.3",
+      "metadataURL": "https://registry.npmjs.org/interval-arithmetic/1.1.3",
+      "gitHead": "1e83f5c49dd57e210b235ff5374aabf69ef9033c",
+      "repository": {
+        "url": "git+https://github.com/mauriciopoppe/interval-arithmetic.git",
+        "type": "git"
+      },
+      "integrity": "sha512-RdEKOQPUky8ShFdKnsOzXXO7LMaCfZtW9Z6t6LugIWgxU1pty4KEo7hpcIDcg3CYZ2iso9fPUiQPPdhsAhaLSQ==",
+      "license": "BSL-1.0",
+      "verifiedPublishedFiles": [
+        "LICENSE",
+        "lib-esm/index.js",
+        "lib/index.js",
+        "package.json",
+        "README.md"
+      ]
+    },
+    {
+      "name": "victory-vendor",
+      "version": "37.3.6",
+      "metadataURL": "https://registry.npmjs.org/victory-vendor/37.3.6",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/FormidableLabs/victory.git",
+        "type": "git"
+      },
+      "integrity": "sha512-SbPDPdDBYp+5MJHhBCAyI7wKM3d5ivekigc2Dk2s7pgbZ9wIgIBYGVw4zGHBml/qTFbexrofXW6Gu4noGxrOwQ==",
+      "license": "MIT AND ISC",
+      "verifiedPublishedFiles": [
+        "lib-vendor/d3-array/LICENSE",
+        "lib-vendor/d3-color/LICENSE",
+        "lib-vendor/d3-ease/LICENSE",
+        "lib-vendor/d3-format/LICENSE",
+        "lib-vendor/d3-interpolate/LICENSE",
+        "lib-vendor/d3-path/LICENSE",
+        "lib-vendor/d3-scale/LICENSE",
+        "lib-vendor/d3-shape/LICENSE",
+        "lib-vendor/d3-time-format/LICENSE",
+        "lib-vendor/d3-time/LICENSE",
+        "lib-vendor/d3-timer/LICENSE",
+        "lib-vendor/d3-voronoi/LICENSE",
+        "lib-vendor/internmap/LICENSE",
+        "package.json",
+        "README.md"
+      ]
+    },
+    {
+      "name": "mathjs",
+      "version": "15.2.0",
+      "metadataURL": "https://registry.npmjs.org/mathjs/15.2.0",
+      "gitHead": "fee4561840043a7473962367bbae6f15bbb3cebb",
+      "repository": {
+        "url": "git+https://github.com/josdejong/mathjs.git",
+        "type": "git"
+      },
+      "integrity": "sha512-UAQzSVob9rNLdGpqcFMYmSu9dkuLYy7Lr2hBEQS5SHQdknA9VppJz3cy2KkpMzTODunad6V6cNv+5kOLsePLow==",
+      "license": "Apache-2.0",
+      "verifiedPublishedFiles": [
+        "LICENSE",
+        "NOTICE",
+        "package.json",
+        "README.md",
+        "lib/browser/math.js.LICENSE.txt"
+      ]
+    }
+  ]
+}

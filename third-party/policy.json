@@ -1,0 +1,812 @@
+{
+  "auditedVersions": {
+    "@babel/runtime": "7.29.10",
+    "@reduxjs/toolkit": "2.13.0",
+    "clsx": "2.1.1",
+    "d3-array": "3.2.4",
+    "d3-axis": "3.0.0",
+    "d3-color": "3.1.0",
+    "d3-dispatch": "3.0.1",
+    "d3-drag": "3.0.0",
+    "d3-ease": "3.0.1",
+    "d3-format": "3.1.2",
+    "d3-interpolate": "3.0.1",
+    "d3-path": "3.1.0",
+    "d3-scale": "4.0.2",
+    "d3-selection": "3.0.0",
+    "d3-shape": "3.2.0",
+    "d3-time": "3.1.0",
+    "d3-time-format": "4.1.0",
+    "d3-timer": "3.0.1",
+    "d3-transition": "3.0.1",
+    "d3-zoom": "3.0.0",
+    "decimal.js": "10.6.0",
+    "decimal.js-light": "2.5.1",
+    "double-bits": "1.1.1",
+    "es-toolkit": "1.52.0",
+    "escape-latex": "1.2.0",
+    "eventemitter3": "5.0.4",
+    "events": "3.3.0",
+    "function-plot": "1.26.0",
+    "immer": "11.1.21",
+    "internmap": "2.0.3",
+    "interval-arithmetic": "1.1.3",
+    "javascript-natural-sort": "0.7.1",
+    "mathjs": "15.2.0",
+    "nextafter": "1.0.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-is": "19.3.1",
+    "react-redux": "9.3.0",
+    "recharts": "3.10.1",
+    "redux": "5.0.1",
+    "redux-thunk": "3.1.0",
+    "reselect": "5.2.0",
+    "scheduler": "0.28.0",
+    "seedrandom": "3.0.5",
+    "tailwindcss": "4.3.3",
+    "tiny-invariant": "1.3.3",
+    "typed-function": "4.2.2",
+    "use-sync-external-store": "1.7.0",
+    "vite": "7.3.7",
+    "zod": "4.6.7"
+  },
+  "upstreamTexts": [
+    {
+      "path": "third-party/upstream/javascript-natural-sort-upstream-LICENSE.txt",
+      "sha256": "4e07465df53c4db4d415321210d6991322f83e6e8ec74a1f0aec3978ab3aa988",
+      "source": "https://github.com/overset/javascript-natural-sort/blob/737133249531169aeb94c701e536d405fa077b25/LICENSE",
+      "scope": "Original author MIT text. The npm 0.7.1 fork carries the MIT marker and Jim Palmer/Dave Koelle credit; its normalized source matches Bill4Time commit a56cd90d4a2491a8e1423b2cc5d2d50aef7bb364. This is not claimed to be a license file shipped in the 0.7.1 tarball."
+    },
+    {
+      "path": "third-party/upstream/quickselect-1.1.1-LICENSE.txt",
+      "sha256": "597034cb7c11c916ad407344ea99a0b08e3c443a6b4421460f1d23c411c69707",
+      "source": "https://github.com/mourner/quickselect/blob/c8b997fbd5fbbdca42307e738adefa7476cd5abe/LICENSE",
+      "upstreamVersion": "v1.1.1",
+      "scope": "Referenced quickselect ISC terms; d3-array 3.2.4 preserves its own 2018 attribution. No exact vendored quickselect release is asserted."
+    }
+  ],
+  "unresolved": [
+    "interval-arithmetic@1.1.3: published BSL-1.0 text versus MIT source headers; no scope inferred."
+  ],
+  "requiredDocuments": [
+    {
+      "path": "node_modules/@babel/runtime/LICENSE",
+      "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+    },
+    {
+      "path": "node_modules/@reduxjs/toolkit/LICENSE",
+      "sha256": "49784961ec6c4941437b7a2c54d8977d0528076a9e7c73dd40f7d0942b8f106d"
+    },
+    {
+      "path": "node_modules/@standard-schema/spec/LICENSE",
+      "sha256": "653b779005a3a4d64a7288c940f7b9a0e8f0b1e0375f6aa6af9473caf131e564"
+    },
+    {
+      "path": "node_modules/@standard-schema/utils/LICENSE",
+      "sha256": "9cf2166507311f427e083ef7671da566949391cb745789abcff8bd43ac26d1f1"
+    },
+    {
+      "path": "node_modules/@types/d3-array/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-color/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-ease/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-interpolate/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-path/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-scale/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-shape/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-time/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/d3-timer/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/react/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/@types/use-sync-external-store/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    },
+    {
+      "path": "node_modules/clsx/license",
+      "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97"
+    },
+    {
+      "path": "node_modules/complex.js/LICENSE",
+      "sha256": "ea6916b674c353de0e9b84b9c91e3b3f8c620a1000d6a65662961b8a67840f19"
+    },
+    {
+      "path": "node_modules/csstype/LICENSE",
+      "sha256": "11d55bd4541c75ee7879547ac49089c489163dae49551389713c3d026cab383e"
+    },
+    {
+      "path": "node_modules/d3-array/LICENSE",
+      "sha256": "3e6849627f74ff73c257a3ae1efb574015d94fc1035c05ec3c15805165efcbc4"
+    },
+    {
+      "path": "node_modules/d3-axis/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-color/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+    },
+    {
+      "path": "node_modules/d3-dispatch/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-drag/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-ease/LICENSE",
+      "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08"
+    },
+    {
+      "path": "node_modules/d3-format/LICENSE",
+      "sha256": "2a6d2d5f32ba0b755ddbc1c833f766e30cdbe6ebe9a6d4e3e24427721f0b63d3"
+    },
+    {
+      "path": "node_modules/d3-interpolate/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-path/LICENSE",
+      "sha256": "a09b0d6d76e768fca2085fad05743ee81ddd11946bcda160a3cf5e1081a479aa"
+    },
+    {
+      "path": "node_modules/d3-scale/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-selection/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-shape/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+    },
+    {
+      "path": "node_modules/d3-time/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+    },
+    {
+      "path": "node_modules/d3-time-format/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-timer/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-transition/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/d3-zoom/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/decimal.js/LICENCE.md",
+      "sha256": "3108b546bcff5d346923a82f48b2d252ca722f9088076db6d145f6b67757ad6c"
+    },
+    {
+      "path": "node_modules/decimal.js-light/LICENCE.md",
+      "sha256": "fc0397fbd5c128bec7edef4e8d3f45e15db5fd043cdd0a2edfc4f14d47fbc3e4"
+    },
+    {
+      "path": "node_modules/double-bits/LICENSE",
+      "sha256": "e67aed7df22dc8031e4fcf5338fe91cb33e3817e5c58a99a2a2802eea9069791"
+    },
+    {
+      "path": "node_modules/es-toolkit/LICENSE",
+      "sha256": "51f3674294d988d89dbebd31273baaeb3c697a15482d9699b14d1fded2e132a7"
+    },
+    {
+      "path": "node_modules/es-toolkit/NOTICE",
+      "sha256": "11ee5e3bce9b0a4dde7f73811caf98978e710228d891c3111ad8ef8d7d2a916f"
+    },
+    {
+      "path": "node_modules/escape-latex/LICENSE.md",
+      "sha256": "8672a18c18ded3d723172d9af1b6b99fce4882b4518dfbb80c9a97da9abb7ccb"
+    },
+    {
+      "path": "node_modules/eventemitter3/LICENSE",
+      "sha256": "3aecc12b1cb28832b5f65ab64291de96568c3f236a74d646281b4491f7bcadbf"
+    },
+    {
+      "path": "node_modules/events/LICENSE",
+      "sha256": "631987b7616a325a5b97566c232418481ddf7dbb5ecadefb991e791876cc2599"
+    },
+    {
+      "path": "node_modules/extend/LICENSE",
+      "sha256": "97af7428f93afbab9bf79cd09254da1357161794f4255eb1b4599f04dd2d2e7c"
+    },
+    {
+      "path": "node_modules/fraction.js/LICENSE",
+      "sha256": "ea6916b674c353de0e9b84b9c91e3b3f8c620a1000d6a65662961b8a67840f19"
+    },
+    {
+      "path": "node_modules/function-plot/LICENSE",
+      "sha256": "86afcfc89ecd82fcf71e87e1f7486cecefa878c73dd6f164445347f7d856d0f4"
+    },
+    {
+      "path": "node_modules/immer/LICENSE",
+      "sha256": "99cf22f6960a6fe228ec84ea9aefb0d75b27999ece83a3a9801e1c2081fa270b"
+    },
+    {
+      "path": "node_modules/internmap/LICENSE",
+      "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f"
+    },
+    {
+      "path": "node_modules/interval-arithmetic/LICENSE",
+      "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+    },
+    {
+      "path": "node_modules/math-codegen/LICENSE",
+      "sha256": "a7b1a80d4c0d3de8fd747d5f73f7d5b0b4145107b5e0a0360d238232bfcef32e"
+    },
+    {
+      "path": "node_modules/mathjs/LICENSE",
+      "sha256": "3b0f65a9308588e12b619b2f05c788b4a5f41220006ce563b826b0feb489fd26"
+    },
+    {
+      "path": "node_modules/mathjs/NOTICE",
+      "sha256": "40e0c8aac7a769ef524e089b8ef75f81325ab7deca50def443b9b20d425e65b5"
+    },
+    {
+      "path": "node_modules/mathjs/lib/browser/math.js.LICENSE.txt",
+      "sha256": "151d5bfa3296601cb7bf5b2d36df4166b862644f894bcd2c3f55c89a06d7fa6b"
+    },
+    {
+      "path": "node_modules/nextafter/LICENSE",
+      "sha256": "e67aed7df22dc8031e4fcf5338fe91cb33e3817e5c58a99a2a2802eea9069791"
+    },
+    {
+      "path": "node_modules/react/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "node_modules/react-dom/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "node_modules/react-is/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "node_modules/react-redux/LICENSE.md",
+      "sha256": "f2da73c752c6b87624755edacf927cbd915fa76555d383e74494bad4a5155ab3"
+    },
+    {
+      "path": "node_modules/recharts/LICENSE",
+      "sha256": "2d3aa48a8d1d3b93093680e8e68d3a64cfb590c3ade377ffcaefc69dac7c2ce5"
+    },
+    {
+      "path": "node_modules/recharts/umd/Recharts.js.LICENSE.txt",
+      "sha256": "c8b22deb666940868b61b1bc7498c178c76ae6350de43dbde37923d6cec336e4"
+    },
+    {
+      "path": "node_modules/redux/LICENSE.md",
+      "sha256": "f2da73c752c6b87624755edacf927cbd915fa76555d383e74494bad4a5155ab3"
+    },
+    {
+      "path": "node_modules/redux-thunk/LICENSE.md",
+      "sha256": "635da794c92d278f8355428be0f9922d643f556d4f75f33fe4aca6b98d27affe"
+    },
+    {
+      "path": "node_modules/reselect/LICENSE",
+      "sha256": "e98047a5dee068b33f82e8c4b7a63037b5108c93393198efd4097753004af5dd"
+    },
+    {
+      "path": "node_modules/scheduler/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "node_modules/tiny-emitter/LICENSE",
+      "sha256": "aada4c7da6a5be46beadf9d4f40d7dba9e222e57180d46289b2bb9112e65daae"
+    },
+    {
+      "path": "node_modules/tiny-invariant/LICENSE",
+      "sha256": "b1c501095de70182748cb8e8d97ac5577701a4ef3b755ba30d59fd87b24bdb0f"
+    },
+    {
+      "path": "node_modules/typed-function/LICENSE",
+      "sha256": "0efa8c81fc2a1e8c668d49cdc60e48e9f2affdb3ee736462ace669ffe44a5dcf"
+    },
+    {
+      "path": "node_modules/use-sync-external-store/LICENSE",
+      "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-array/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-color/LICENSE",
+      "sha256": "faa682e3e430941f958d26180458f5934a62f58dac4d70ccdd15608c15d0f884"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-ease/LICENSE",
+      "sha256": "b989d9085148d21ff64a75e14462aefa06b2589a55553b07b1460c70081c7d08"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-format/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-interpolate/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-path/LICENSE",
+      "sha256": "0ab21426fad1e8b819ea8ab4c7faf5a24d4fca9c01572fe722490d600bba0d22"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-scale/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-shape/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-time-format/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-time/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-timer/LICENSE",
+      "sha256": "e008c5e25a6be382593089c29bfabbc553c6378eee02895aec46ce396cc404ee"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/d3-voronoi/LICENSE",
+      "sha256": "ad6cf57648385d6c40a29f73c55e42922dd793823df5ea265ccd834873bf09b9"
+    },
+    {
+      "path": "node_modules/victory-vendor/lib-vendor/internmap/LICENSE",
+      "sha256": "9ea8903938dab5f12c4572d60725069bec2d1b0dc3bcc210b09bae946a5ebb1f"
+    },
+    {
+      "path": "node_modules/zod/LICENSE",
+      "sha256": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8"
+    },
+    {
+      "path": "node_modules/vite/LICENSE.md",
+      "sha256": "a77a1c089806b39ad339535bdf3677f636c91d96693e8ad7b11fe733f650ea64"
+    },
+    {
+      "path": "node_modules/tailwindcss/LICENSE",
+      "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985"
+    }
+  ],
+  "requiredAttributions": [
+    {
+      "name": "d3-array",
+      "path": "src/quickselect.js",
+      "sha256": "8b1cb4b56d69be7f3b3f5d1f9ce3d1c08300838aa6d4b9cc6c0c414d5d04b226"
+    },
+    {
+      "name": "d3-format",
+      "path": "src/locale.js",
+      "sha256": "113983d0a72e8eedfc2eee6248e2b2382ab620321c11d3dbb2b986cb94d4793b"
+    },
+    {
+      "name": "d3-selection",
+      "path": "src/array.js",
+      "sha256": "1cfa98817c101d19d1d510a2c7cbd4f11daa4df8f91d8ae30725fd52a372dfb2"
+    },
+    {
+      "name": "d3-shape",
+      "path": "src/curve/monotone.js",
+      "sha256": "aa41fed7ab74cc3585a6a7d5c3095c6bfc32a851a6b252364127507923a5effd"
+    },
+    {
+      "name": "decimal.js",
+      "path": "decimal.mjs",
+      "sha256": "517ced3e8a50a2f8df78eba1e898fd1209519730e798f002cb108a44a2d13a4c"
+    },
+    {
+      "name": "decimal.js-light",
+      "path": "decimal.mjs",
+      "sha256": "04c97be1a2b09c51ff63b6549560be6414ae30ad8e9b0c025326a6509e5abb68"
+    },
+    {
+      "name": "es-toolkit",
+      "path": "dist/array/uniqBy.mjs",
+      "sha256": "aa365b98c0b94b15eb2c06d6c23d6c65f33cfd7ec4a629235f67a22003b42c48"
+    },
+    {
+      "name": "es-toolkit",
+      "path": "dist/compat/array/orderBy.mjs",
+      "sha256": "de21520a1d8b72dc3242ac0e750b3f247aa1acc2fb52cbbda30138e5f4f9939e"
+    },
+    {
+      "name": "events",
+      "path": "events.js",
+      "sha256": "9ed580a09fdd2e561c0ffc1fb5504c66b9cd72b039ac979d96264436deeca325"
+    },
+    {
+      "name": "function-plot",
+      "path": "dist/evaluate.js",
+      "sha256": "a1d906ba210ecc8c1d70b56b6b4fb64fff2b012173d78195b735ac22d31b0807"
+    },
+    {
+      "name": "interval-arithmetic",
+      "path": "lib-esm/index.js",
+      "sha256": "61e104308c40090c30295512b044743dd85650d80df2fc39f6dee07a96819226"
+    },
+    {
+      "name": "interval-arithmetic",
+      "path": "lib-esm/operations/misc.js",
+      "sha256": "065b81153f2e22a8b4f7fd544c1d328d5bb20136b8a88bb1e710fc97223781a6"
+    },
+    {
+      "name": "interval-arithmetic",
+      "path": "lib-esm/operations/misc.js",
+      "sha256": "15b6290fced558cd1f35932c565345c1873bdb5f6d019863293c561b893e8d33"
+    },
+    {
+      "name": "javascript-natural-sort",
+      "path": "naturalSort.js",
+      "sha256": "8518f592477e8e9d6324871635c357eaa6a8b34bc33d710efb6c2ef6be48ed1f"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/expression/node/ConditionalNode.js",
+      "sha256": "faace4c0556da2c652654cce78578840b82379e87aaf5c4b48fad8759b586c43"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/expression/node/ConditionalNode.js",
+      "sha256": "faace4c0556da2c652654cce78578840b82379e87aaf5c4b48fad8759b586c43"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/expression/transform/utils/transformCallback.js",
+      "sha256": "9285f2cd2b3a740407c43d331ae601bd289c48dcfc6d346a5ad63ee3741dad31"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/expression/transform/utils/transformCallback.js",
+      "sha256": "97f2bca5255cd9cf1a9cb8819048e6123c3a44816959d7196794c570200dcd10"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/expression/transform/utils/transformCallback.js",
+      "sha256": "4238f8707bd807274951260125d6975b105c76c1fd9f7d6ac9c2b80cd9b45308"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/function/arithmetic/hypot.js",
+      "sha256": "391ed7279f69ad62482026d2f9881b866dcba22a41a2d3d80faa93d5b67f8e23"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/function/matrix/map.js",
+      "sha256": "9baac5f1eb974c74616069ae841f0283071812bac4c1aaabfafc79879ea19acb"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/utils/is.js",
+      "sha256": "cf6fbe22d15ad701a75c9a1e4e8aaef2cf3bbd8b0b0885699dce14d878c70f33"
+    },
+    {
+      "name": "mathjs",
+      "path": "lib/esm/utils/lruQueue.js",
+      "sha256": "bb1ec9227f423a6bf367d0a7bb0a198305a71b689af669eca6f804ca1d13e58f"
+    },
+    {
+      "name": "react",
+      "path": "cjs/react-jsx-runtime.production.js",
+      "sha256": "f29b5902fdc1d4d28ee16330e88e90dd6ab64f5c77eb3ad8e9e66becbbfdbd4c"
+    },
+    {
+      "name": "react",
+      "path": "cjs/react.production.js",
+      "sha256": "90eea83eadca9ee07f21d69c4d3e0f5636befedee93d5a1c22410020b8d57fb2"
+    },
+    {
+      "name": "react-dom",
+      "path": "cjs/react-dom-client.production.js",
+      "sha256": "dbb77a2829eef159dc6ad61fb8885a8c8da01a46026d19c84389316305a53c29"
+    },
+    {
+      "name": "react-dom",
+      "path": "cjs/react-dom.production.js",
+      "sha256": "3a03c6e30fda3608e9e50224e4d3d0d859d8eebacbfc0452c9388cba839025f8"
+    },
+    {
+      "name": "react-is",
+      "path": "cjs/react-is.production.js",
+      "sha256": "7822366bed2f29c48e645128fec49ba79fece70e16d14e10240d781df19101d9"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/AnimationHandle.js",
+      "sha256": "15bc708ed7d9db7918bbd129d2edc6f356e0e4f20c5b6d44f1b177ef402b67f7"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/AnimationHandle.js",
+      "sha256": "1392adc44cc3eab5b6922ecfc5143b6cddcb786103189e98257687a9120df6b1"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/AnimationHandle.js",
+      "sha256": "57bb6d4df7fb6c739ab75c771b284cafb27e787e13f59924e4b4feb14fead9a6"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/easing.js",
+      "sha256": "70b1e3f6777e28e56d8cb2c7a80eb03add269e9c0c8f72b977996e92a0cd3e8b"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/matchBy.js",
+      "sha256": "0a8d77dbaa61a5ed13979e3eb043c5b6aee701f7a402855a9a47ab3e9d6cf71f"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/timeoutController.js",
+      "sha256": "3dfc982457aff72156e9690c9326c89cfe489e9f14d1a5b6e075498705d2040d"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/animation/useAnimationController.js",
+      "sha256": "116069ec4530358281a4bd3a5033a3afeed4e50a16fac3038bbd382676d8165b"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/cartesian/Bar.js",
+      "sha256": "3e2a54e963c14bf4fff73eab18f74bbb33b5a58be519451cd54ab0ce99a18f57"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/cartesian/getCartesianPosition.js",
+      "sha256": "9eb492b684c0d2fc7523d0d80d98377b5f4044729b987a176cb74bcca3d24d05"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/cartesian/getCartesianPosition.js",
+      "sha256": "34fc17c956c0f6de7a76372c1fb246140a63f4b9bc67ce2a4e84fbc43081ab39"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/component/Label.js",
+      "sha256": "ff1904a6f74b99dedaddb540d17f3164c377e40a3b986bcd375b4089a7da5c75"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/component/ResponsiveContainer.js",
+      "sha256": "7c1d13f15302af728ae80540948917112fa3bd06b9a553abd871dee7d82ccdfd"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/component/Tooltip.js",
+      "sha256": "f58a17c6929a60665a230e3e5a9eee5ad1f674379ec665164e73f0464bb36038"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/hooks.js",
+      "sha256": "5040ee623a46c3341decb89a4af12b68ba97c62eee94088a2aaaf2cb093656ec"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/hooks.js",
+      "sha256": "790feb902097075dfd9cc4c71ea138b00a650848bad211fa77cc281352e2fc91"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/hooks.js",
+      "sha256": "7e753c4b4e6367b44c55695e71b2e5e438a159bfdb9d622736c4e0ee0d09bcbb"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/shape/Rectangle.js",
+      "sha256": "1e33ad03e93252f225d1e04d7bed83a5be15eb5f7c6c13ee082456c62d1b0656"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/state/cartesianAxisSlice.js",
+      "sha256": "b2e2f5874a595907472040180df288b14fd02efb3bfe632c0488b7a81e1a134e"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/state/externalEventsMiddleware.js",
+      "sha256": "31e9281e3cc2be8242aabf5aac2c6a7878f774ca1c924d577bf6127433f2f017"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/state/tooltipSlice.js",
+      "sha256": "6e20daaf19af28b6fb03ca86375d16d7e5851f58b8f77888c9512c38d81a8111"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/synchronisation/useChartSynchronisation.js",
+      "sha256": "c34d64624b306a797e96f077afb9d33e7581a28acb3e5636babfcae2ddfda754"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/synchronisation/useChartSynchronisation.js",
+      "sha256": "aeb0c53d1e217ec457148d906530b801f1c9da76d68f7977cbc102bca18ea502"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/DataUtils.js",
+      "sha256": "53678151fe46b0fd043e528d751785e321962fe7d081601fe86777fe0f083941"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/DataUtils.js",
+      "sha256": "06c9c106cfe300414ba7b5e6711cb24a5f19751135750de5e877d299f4c2814f"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/XAxisUtils.js",
+      "sha256": "c46d96b8714c4cd238ee7461770f72a3ef88315389ca7aa68a40e54ad9e6c01e"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/YAxisUtils.js",
+      "sha256": "564c3ead6eae904b622c8f3a3a8fe5d65a64be397d40c53434145bb6add1c710"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/getAxisTypeBasedOnLayout.js",
+      "sha256": "3a7e0cae36e4f5df11c437de04e72e1a32cd283b448c48345043a7599c4b18b5"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/isDomainSpecifiedByUser.js",
+      "sha256": "fcede3e505abe33371aed6362f9e449ecd8272c246a34e851d5d9f08670143df"
+    },
+    {
+      "name": "recharts",
+      "path": "es6/util/types.js",
+      "sha256": "f9b0caf83508afbbb90a50e273b3e32d64cef0600e1fd36bf447ea123964c729"
+    },
+    {
+      "name": "scheduler",
+      "path": "cjs/scheduler.production.js",
+      "sha256": "1259fe974cb4fccd7b27ba88b46817541f1786b86ae6d463c3ce1a805cc19eda"
+    },
+    {
+      "name": "seedrandom",
+      "path": "index.js",
+      "sha256": "2d7ceb006c56b741442e000b9d97a9d2eb002391c2c651038c59a219f4001be4"
+    },
+    {
+      "name": "seedrandom",
+      "path": "index.js",
+      "sha256": "764d173fda03897a1726f81b0b0a5ad783081656efa0eefcc6fa83211551be71"
+    },
+    {
+      "name": "seedrandom",
+      "path": "index.js",
+      "sha256": "5f7e5c2b829adebb15e5e71468d5c4c91a08cb8ee83a57c321c02fdbd7ef8082"
+    },
+    {
+      "name": "seedrandom",
+      "path": "index.js",
+      "sha256": "908d439c0c6afa7a69a39a5688bbc5be3b0f1ec2ac91d8761d2fc4864ae17058"
+    },
+    {
+      "name": "seedrandom",
+      "path": "index.js",
+      "sha256": "ecbc99930c9d58e0a846c108d4f3eb28f4293025c54dc024b33558623e556280"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/alea.js",
+      "sha256": "da88f3fa153fceb2301de578b2ed76cca1d07bd882f74198511a1ce877c6edff"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/alea.js",
+      "sha256": "57b62f18a780f6f56d7763d5e59d02fa7b9987faa5f31c4be3c2fe51ddffa2fd"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/tychei.js",
+      "sha256": "efb0a72e2ae63ba3cea3beef314a3b1c533e93fa13a023fc91f7d236fda0ab6f"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/xor128.js",
+      "sha256": "d9be29fee92215546e8d74185fb1ed462004ee49b68262cf2b5c82f6c39ced4a"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/xor4096.js",
+      "sha256": "1b296a7bffffa81b887d628ab1606534ff22a844516cc5e3da594b36186d92e5"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/xorshift7.js",
+      "sha256": "4490f4274ea636fc94a90086a2caaab54d3679733e4285d3f2b02ad4f811de71"
+    },
+    {
+      "name": "seedrandom",
+      "path": "lib/xorwow.js",
+      "sha256": "7d44de5a0b3b45af75dcfd2ce5f4690c18b61934c8159c4608206db8303b45ae"
+    },
+    {
+      "name": "seedrandom",
+      "path": "seedrandom.js",
+      "sha256": "996de33875f125fec5c623274b6d69c6afd1f1c198cb5b47cc8d9add258c846f"
+    },
+    {
+      "name": "seedrandom",
+      "path": "seedrandom.js",
+      "sha256": "ade770cd8d9ceb5f7e20e691d9712d6c34061744f0e4f3366496d1d8235b915a"
+    },
+    {
+      "name": "seedrandom",
+      "path": "seedrandom.js",
+      "sha256": "3004c10e09a7add8388a9ea22bbefd5d8b1c8c1cdd78889a43b9df446c318207"
+    },
+    {
+      "name": "seedrandom",
+      "path": "seedrandom.js",
+      "sha256": "69803cf882a74c3e176abaff668170e1f50ff3a71f1763e4907fa0fa629ca7a3"
+    },
+    {
+      "name": "seedrandom",
+      "path": "seedrandom.js",
+      "sha256": "9fc539992f4c5d9c8669c6c4a1d2ff853dd73c4fa1072d4cd84bf297bf97afd1"
+    },
+    {
+      "name": "use-sync-external-store",
+      "path": "cjs/use-sync-external-store-shim.production.js",
+      "sha256": "6cc1fe93088718486eb67c3f2578891cdfd6b5bfa229521fac6340d068cc2d35"
+    },
+    {
+      "name": "use-sync-external-store",
+      "path": "cjs/use-sync-external-store-shim/with-selector.production.js",
+      "sha256": "bdc77ae504b520a2a68adfc28ab9d4dcf99e56f2b2d54153397e0ed4e7d55aee"
+    },
+    {
+      "name": "use-sync-external-store",
+      "path": "cjs/use-sync-external-store-with-selector.production.js",
+      "sha256": "e8cf9ee30093af1aa1853ce5012478e306e305532e5b1e72b3a6394a9fe0ba31"
+    },
+    {
+      "name": "zod",
+      "path": "v4/core/regexes.js",
+      "sha256": "f3f99a19a7edc22085f615410f8800bdce208cd5848b9034ef83fbba777c86c4"
+    },
+    {
+      "name": "zod",
+      "path": "v4/core/schemas.js",
+      "sha256": "2976e4188c1d320726d4b78ef0727c3bf21da87900acd9cca54d94099ac9b52e"
+    }
+  ]
+}

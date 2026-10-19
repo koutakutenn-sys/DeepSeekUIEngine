@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { plotAliases } from './plot-aliases';
+import { licenseModules } from './scripts/license-modules';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), licenseModules('content')],
   resolve: { alias: plotAliases },
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   publicDir: 'public',
