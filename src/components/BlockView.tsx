@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Block } from '../protocol';
+import { FunctionPlot } from './FunctionPlot';
 
 const formatNumber = new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 15 });
 function display(value: string | number | boolean | null | undefined): string {
@@ -63,6 +64,7 @@ function Chart({ block }: { block: Extract<Block, { type: 'bar_chart' }> }) {
 export function BlockView({ block }: { block: Block }) {
   return <section className="block" aria-label={block.title}>
     <h3 className="block-title">{block.title}</h3>
+    {block.type === 'function_plot' && <FunctionPlot block={block} />}
     {block.type === 'metric_grid' && <div className="metric-grid">{block.items.map((item, index) => <div key={index} className="metric">
       <div className="metric-label">{item.label}</div>
       <div className="metric-value">{display(item.value)}{item.unit && <span className="metric-unit">{item.unit}</span>}</div>

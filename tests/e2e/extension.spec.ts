@@ -1,7 +1,7 @@
 import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { metrics, chart, table, timeline, payload } from '../fixtures';
+import { metrics, chart, table, timeline, payload, quadratic } from '../fixtures';
 
 const fixture = `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><title>DeepSeek DOM test fixture</title>
 <style>
@@ -16,10 +16,18 @@ let context: BrowserContext;
 let page: Page;
 let popup: Page;
 
+async function selectMode(name: RegExp) {
+  const radio = popup.getByRole('radio', { name });
+  await expect(radio).toBeEnabled();
+  // The popup confirms the controlled radio only after asynchronous storage writes.
+  if (!await radio.isChecked()) await radio.click();
+  await expect(radio).toBeChecked();
+}
+
 test.beforeAll(async () => {
   const extension = resolve('dist');
   context = await chromium.launchPersistentContext(resolve(`.cache/e2e-profiles/run-${Date.now()}`), {
-    channel: 'chromium', headless: true, timeout: 15_000, viewport: { width: 1024, height: 1000 },
+    channel: 'chromium', headless: true, hasTouch: true, timeout: 15_000, viewport: { width: 1024, height: 1000 },
     args: [`--disable-extensions-except=${extension}`, `--load-extension=${extension}`],
   });
   page = await context.newPage();
@@ -52,7 +60,7 @@ test.beforeAll(async () => {
   await popup.setViewportSize({ width: 360, height: 560 });
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
   await expect(popup.getByRole('radio', { name: /Auto/ })).toBeEnabled();
-  await popup.getByRole('radio', { name: /Auto/ }).check();
+  await selectMode(/Auto/);
 });
 
 test.afterAll(async () => { await context?.close(); });
@@ -81,10 +89,10 @@ test('loads the actual MV3 extension, renders four components, updates streams a
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('dark-mobile.png'), fullPage: true });
-  await popup.getByRole('radio', { name: /Off/ }).check();
+  await selectMode(/Off/);
   await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
   await expect(page.locator('#stream')).toBeVisible();
-  await popup.getByRole('radio', { name: /Force/ }).check();
+  await selectMode(/Force/);
   await expect(page.locator('[data-dsui-host]')).toHaveCount(2);
   await page.locator('#stream').evaluate((node) => { node.textContent += 'invalid'; });
   await expect(page.locator('[data-dsui-host]')).toHaveCount(1);
@@ -99,7 +107,7 @@ test('loads the actual MV3 extension, renders four components, updates streams a
 test('activates only by its button, preserves drafts, and leaves ordinary chat verbatim', async ({}, testInfo) => {
   await page.goto('https://chat.deepseek.com/');
   const input = page.getByRole('textbox', { name: '消息' });
-  await popup.getByRole('radio', { name: /Auto/ }).check();
+  await selectMode(/Auto/);
   const enable = page.getByRole('button', { name: '启用 UI', exact: true });
   await expect(enable).toBeEnabled();
   await input.fill('尚未发送的草稿');
@@ -119,11 +127,11 @@ test('activates only by its button, preserves drafts, and leaves ordinary chat v
   await input.fill('再给一个表格');
   await page.locator('[role="button"].ds-button--primary.ds-button--circle').click();
   await expect(page.locator('#sent')).toHaveText('再给一个表格');
-  await popup.getByRole('radio', { name: /Force/ }).check();
+  await selectMode(/Force/);
   await input.fill('继续展示图表');
   await input.press('Enter');
   await expect(page.locator('#sent')).toHaveText('继续展示图表');
-  await popup.getByRole('radio', { name: /Off/ }).check();
+  await selectMode(/Off/);
   await expect(page.locator('[data-dsui-activation-host]')).toHaveCount(0);
   await input.fill('普通聊天');
   await input.press('Enter');
@@ -134,7 +142,7 @@ test('activates only by its button, preserves drafts, and leaves ordinary chat v
 });
 
 test('tracks manual activation across assigned IDs, new chats, and loaded history after refresh', async () => {
-  await popup.getByRole('radio', { name: /Auto/ }).check();
+  await selectMode(/Auto/);
   await page.goto('https://chat.deepseek.com/');
   const input = page.getByRole('textbox', { name: '消息' });
   await page.getByRole('button', { name: '启用 UI', exact: true }).click();
@@ -164,4 +172,119 @@ test('tracks manual activation across assigned IDs, new chats, and loaded histor
   await page.evaluate(() => { history.replaceState(null, '', '/'); dispatchEvent(new PopStateEvent('popstate')); });
   await page.locator('.user-content').evaluate((node) => { node.textContent = ''; });
   await expect(page.getByRole('button', { name: '启用 UI', exact: true })).toBeEnabled();
+});
+
+test('quadratic plot stays local through keyboard, mouse, theme, resize and raw fallback', async ({}, testInfo) => {
+  await selectMode(/Auto/);
+  await page.setViewportSize({ width: 1024, height: 1000 });
+  await page.goto('https://chat.deepseek.com/');
+  const source = page.locator('#stream');
+  for (const text of ['{"protocol":"dsui",', payload([{ ...quadratic, expression: 'alert(1)' }]),
+    payload([{ ...quadratic, viewport: { ...quadratic.viewport, xMax: -8 } }]), payload([quadratic]) + ' '.repeat(100000)]) {
+    await source.evaluate((node, text) => { node.textContent = text; }, text);
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+    await expect(source).toBeVisible();
+  }
+  await source.evaluate((node, text) => { node.textContent = text; }, payload([quadratic]));
+  const plot = page.getByRole('application', { name: /函数坐标系/ });
+  await expect(plot).toBeVisible();
+  await expect(page.locator('.plot-formula')).toHaveText('y = x²');
+  await page.screenshot({ path: testInfo.outputPath('function-plot-light-desktop.png'), fullPage: true });
+  await page.locator('[data-dsui-host]').evaluate((node) => { (window as unknown as { plotHost: Element }).plotHost = node; });
+  const requests: string[] = []; const errors: string[] = [];
+  const requestListener = (request: { url(): string }) => requests.push(request.url());
+  const errorListener = (error: Error) => errors.push(error.message);
+  page.on('request', requestListener); page.on('pageerror', errorListener);
+  try {
+    const a = page.getByRole('slider', { name: 'a', exact: true });
+    await a.focus(); await a.press('Home');
+    await expect(page.locator('.plot-formula')).toHaveText('y = −5x²');
+    await a.press('End'); await expect(a).toHaveValue('5');
+    await a.press('ArrowLeft'); await expect(a).toHaveValue('4.9');
+    for (const name of ['b', 'c']) {
+      const slider = page.getByRole('slider', { name, exact: true });
+      await slider.focus(); await slider.press('Home'); await expect(slider).toHaveValue('-10');
+      await slider.press('End'); await expect(slider).toHaveValue('10');
+    }
+    await page.getByRole('button', { name: '复位参数', exact: true }).click();
+    await a.focus(); for (let i = 0; i < 10; i++) await a.press('ArrowLeft');
+    await expect(page.locator('.plot-formula')).toHaveText('y = 0');
+    await expect(page.locator('.plot-description')).toContainText('水平直线');
+    await page.getByRole('slider', { name: 'b', exact: true }).press('ArrowRight');
+    await expect(page.locator('.plot-formula')).toHaveText('y = 0.5x');
+    await source.evaluate((node) => { node.textContent += '\n '; });
+    await expect(page.locator('.source-disclosure pre')).toHaveText(payload([quadratic]));
+    await expect(page.locator('.plot-formula')).toHaveText('y = 0.5x');
+    await page.getByRole('button', { name: '复位参数', exact: true }).click();
+    const range = page.locator('.plot-range'); const initial = await range.textContent();
+    await plot.hover(); await page.mouse.wheel(0, -250);
+    await expect(range).not.toHaveText(initial!);
+    await page.getByRole('button', { name: '复位视口', exact: true }).click();
+    await expect(range).toHaveText(initial!);
+    const box = (await plot.boundingBox())!;
+    await page.mouse.move(box.x + 150, box.y + 100); await page.mouse.down();
+    await page.mouse.move(box.x + 200, box.y + 130, { steps: 8 }); await page.mouse.up();
+    await expect(range).not.toHaveText(initial!);
+    await plot.focus(); await plot.press('Home'); await expect(range).toHaveText(initial!);
+    await page.locator('html').evaluate((node) => node.classList.add('dark'));
+    await page.setViewportSize({ width: 320, height: 844 });
+    await expect(page.locator('[data-dsui-host]')).toHaveAttribute('data-theme', 'dark');
+    await expect.poll(() => plot.getAttribute('viewBox')).not.toBe(`0 0 ${box.width} 290`);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expect(page.locator('.plot-formula')).toHaveText('y = x²');
+    expect(await page.locator('[data-dsui-host]').evaluate((node) => (window as unknown as { plotHost: Element }).plotHost === node)).toBe(true);
+    await expect(page.locator('[data-plot-curve]')).not.toHaveAttribute('d', /NaN|Infinity/);
+    await page.screenshot({ path: testInfo.outputPath('function-plot-dark-mobile.png'), fullPage: true });
+    await page.getByText('查看原始 DSUI', { exact: true }).click();
+    await expect(page.locator('.source-disclosure pre')).toHaveText(payload([quadratic]));
+    expect(requests).toEqual([]); expect(errors).toEqual([]);
+    await selectMode(/Off/);
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(0); await expect(source).toBeVisible();
+    await selectMode(/Auto/);
+    await expect(plot).toBeVisible();
+    await source.evaluate((node) => { node.textContent += 'invalid'; });
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(0); await expect(source).toBeVisible();
+    await page.locator('#first .md-code-block').evaluate((node, text) => {
+      const replacement = document.createElement('pre'); const code = document.createElement('code');
+      code.className = 'language-dsui'; code.textContent = text; replacement.append(code); node.replaceWith(replacement);
+    }, payload([quadratic]));
+    await expect(plot).toBeVisible(); await expect(page.locator('[data-dsui-host]')).toHaveCount(1);
+  } finally { page.off('request', requestListener); page.off('pageerror', errorListener); }
+});
+
+test('quadratic plot contains touch drag and pinch gestures without scrolling the page', async () => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('https://chat.deepseek.com/');
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload([quadratic]));
+  const plot = page.getByRole('application', { name: /函数坐标系/ });
+  await expect(plot).toBeVisible(); await expect(plot).toHaveCSS('touch-action', 'none');
+  await plot.scrollIntoViewIfNeeded();
+  const box = (await plot.boundingBox())!;
+  const range = page.locator('.plot-range'); const initial = await range.textContent();
+  const scroll = await page.evaluate(() => scrollY);
+  const cdp = await context.newCDPSession(page);
+  const point = (id: number, dx: number, dy = 120) => ({ id, x: box.x + dx, y: box.y + dy });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(0, 100)] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(0, 140, 150)] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(range).not.toHaveText(initial!);
+  const dragged = await range.textContent();
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(0, 90), point(1, 170)] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point(0, 60), point(1, 200)] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(range).not.toHaveText(dragged!);
+  expect(await page.evaluate(() => scrollY)).toBe(scroll);
+  await expect(page.locator('[data-plot-curve]')).not.toHaveAttribute('d', /NaN|Infinity/);
+  const a = page.getByRole('slider', { name: 'a', exact: true });
+  await a.scrollIntoViewIfNeeded();
+  const sliderBox = (await a.boundingBox())!;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ id: 0, x: sliderBox.x + sliderBox.width * 0.8, y: sliderBox.y + sliderBox.height / 2 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(a).not.toHaveValue('1');
+  await page.getByRole('button', { name: '复位参数', exact: true }).click();
+  await a.click({ position: { x: sliderBox.width * 0.25, y: sliderBox.height / 2 } });
+  await expect(a).not.toHaveValue('1');
+  await page.getByRole('button', { name: '复位参数', exact: true }).click();
+  await expect(a).toHaveValue('1');
+  await cdp.detach();
 });

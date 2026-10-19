@@ -22,7 +22,8 @@ export function mountPayload(element: HTMLElement, payload: Payload, source: str
   shadow.append(style, container);
   element.after(host);
   const root = createRoot(container, { onUncaughtError: onFailure });
-  const update = (next: Payload, text: string) => root.render(<PayloadView key={text} payload={next} source={text} onFailure={onFailure} />);
+  // Formatting-only stream updates preserve local controls; changed data resets them.
+  const update = (next: Payload, text: string) => root.render(<PayloadView key={JSON.stringify(next)} payload={next} source={text} onFailure={onFailure} />);
   update(payload, source);
   const hidden = element.hidden;
   const display = element.style.getPropertyValue('display');

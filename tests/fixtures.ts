@@ -17,6 +17,15 @@ export const timeline = {
   items: [{ date: '第 1 周', title: '调研', description: '整理需求与使用场景', status: 'done' },
     { date: '第 2 周', title: '开发', description: '实现首个版本', status: 'active' }],
 };
+export const quadratic = {
+  id: 'quadratic-1', type: 'function_plot', title: '二次函数参数实验', preset: 'quadratic',
+  parameters: [
+    { key: 'a', label: 'a', value: 1, min: -5, max: 5, step: 0.1 },
+    { key: 'b', label: 'b', value: 0, min: -10, max: 10, step: 0.5 },
+    { key: 'c', label: 'c', value: 0, min: -10, max: 10, step: 0.5 },
+  ],
+  viewport: { xMin: -8, xMax: 8, yMin: -8, yMax: 8 },
+};
 export function payload(blocks: unknown[] = [chart]) {
   return JSON.stringify({ protocol: 'dsui', version: 1, blocks });
 }

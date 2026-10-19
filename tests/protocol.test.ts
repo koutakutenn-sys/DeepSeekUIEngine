@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parsePayload } from '../src/protocol';
-import { chart, metrics, payload, table, timeline } from './fixtures';
+import { chart, metrics, payload, quadratic, table, timeline } from './fixtures';
 
 describe('DSUI protocol', () => {
-  it.each([chart, metrics, table, timeline])('accepts $type', (block) => {
+  it.each([chart, metrics, table, timeline, quadratic])('accepts $type', (block) => {
     expect(parsePayload(payload([block]))?.blocks[0].type).toBe(block.type);
   });
   it('rejects incomplete or invalid JSON and unsupported versions', () => {
@@ -37,5 +37,39 @@ describe('DSUI protocol', () => {
     const text = '<img src=x onerror=alert(1)>';
     const result = parsePayload(payload([{ ...metrics, items: [{ label: text, value: text }] }]));
     expect(result?.blocks[0]).toMatchObject({ items: [{ label: text, value: text }] });
+  });
+});
+
+describe('quadratic plot protocol', () => {
+  it('requires exactly three unique parameters and the fixed quadratic preset', () => {
+    for (const parameters of [[], quadratic.parameters.slice(0, 2), [...quadratic.parameters, quadratic.parameters[0]],
+      [quadratic.parameters[0], quadratic.parameters[0], quadratic.parameters[2]],
+      quadratic.parameters.map((p) => ({ ...p, key: p.key === 'b' ? 'd' : p.key }))]) {
+      expect(parsePayload(payload([{ ...quadratic, parameters }]))).toBeNull();
+    }
+    expect(parsePayload(payload([{ ...quadratic, preset: 'expression' }]))).toBeNull();
+    expect(parsePayload(payload([{ ...quadratic, expression: 'alert(1)' }]))).toBeNull();
+    expect(parsePayload(payload([{ ...quadratic, viewport: { ...quadratic.viewport, color: 'red' } }]))).toBeNull();
+  });
+  it('rejects unsafe slider ranges and finite numbers beyond the documented bounds', () => {
+    for (const patch of [{ value: 6 }, { min: 1, max: 1 }, { min: 2 }, { step: 0 }, { step: -1 },
+      { value: '1' }, { min: -10001 }, { max: 10001 }, { step: 1e-12 }, { onChange: 'fetch()' }]) {
+      const parameters = quadratic.parameters.map((p, i) => i === 0 ? { ...p, ...patch } : p);
+      expect(parsePayload(payload([{ ...quadratic, parameters }]))).toBeNull();
+    }
+    expect(parsePayload(payload([quadratic]).replace('"value":1,', '"value":1e309,'))).toBeNull();
+    const parameters = quadratic.parameters.map((p) => ({ ...p, min: -10000, max: 10000, value: 10000 }));
+    expect(parsePayload(payload([{ ...quadratic, parameters }]))).not.toBeNull();
+    expect(parsePayload(payload([{ ...quadratic, parameters: quadratic.parameters.map((p) => ({ ...p, value: 0.15 })) }]))).not.toBeNull();
+  });
+  it('bounds viewports, preserves stream fallback and keeps the existing reply limits', () => {
+    for (const patch of [{ xMin: 8 }, { yMax: -8 }, { xMax: 1e7 }, { xMin: 0, xMax: 1e-10 },
+      { yMin: -1e6, yMax: 1e6 }, { yMin: null }]) {
+      expect(parsePayload(payload([{ ...quadratic, viewport: { ...quadratic.viewport, ...patch } }]))).toBeNull();
+    }
+    expect(parsePayload(payload([quadratic, metrics, chart]))).not.toBeNull();
+    expect(parsePayload(payload([quadratic, metrics, chart, table]))).toBeNull();
+    expect(parsePayload(payload([quadratic]).slice(0, -2))).toBeNull();
+    expect(parsePayload(payload([quadratic]) + ' '.repeat(100000))).toBeNull();
   });
 });
