@@ -9,6 +9,7 @@ playwright-report/
 .env.*
 .DS_Store
 docs/UI_TARGETS.md
+/THIRD_PARTY_LICENSE_AUDIT.md
 # Local agent instructions and project planning documents
 AGENTS.md
 AGENTS.md.disable

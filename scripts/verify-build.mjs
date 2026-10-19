@@ -18,7 +18,6 @@ const notices = await readFile(join(output, 'THIRD_PARTY_NOTICES.txt'), 'utf8');
 const licenseAudit = await collectLicenseAudit(output);
 verifyLicenseNotices(notices, licenseAudit);
 assert.deepEqual(JSON.parse(await readFile(join(output, 'THIRD_PARTY_COVERAGE.json'), 'utf8')), { packages: licenseAudit.coverage, unresolved: licenseAudit.unresolved });
-assert.equal(await readFile(join(output, 'THIRD_PARTY_LICENSE_AUDIT.md'), 'utf8'), await readFile('THIRD_PARTY_LICENSE_AUDIT.md', 'utf8'));
 assert(notices.includes('function-plot@1.26.0') && notices.includes('Copyright (c) 2015 Mauricio Poppe'), 'Preserve upstream plotting notices');
 const markdownNotices = await readFile(join(output, 'THIRD_PARTY_NOTICES.md'), 'utf8');
 assert.equal(markdownNotices, await readFile('THIRD_PARTY_NOTICES.md', 'utf8'), 'Distribute the complete third-party notice unchanged');

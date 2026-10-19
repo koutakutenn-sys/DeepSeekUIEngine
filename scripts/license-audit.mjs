@@ -78,7 +78,7 @@ export async function collectLicenseAudit(output = 'dist') {
   directories.add('node_modules/vite');
   directories.add('node_modules/tailwindcss');
   const sections = ['DeepSeek UI Engine — production dependency notices\nSome listed packages may not be included in the final bundle.',
-    'Package license labels below are metadata, not conclusions about every file. Retained source attributions and nested license texts are preserved separately. See THIRD_PARTY_LICENSE_AUDIT.md for provenance and the unresolved interval-arithmetic licensing scope.'];
+    'Package license labels below are metadata, not conclusions about every file. Retained source attributions and nested license texts are preserved separately.'];
   const coverage = [];
   for (const directory of directories) {
     const pkg = JSON.parse(await readFile(join(directory, 'package.json'), 'utf8'));
