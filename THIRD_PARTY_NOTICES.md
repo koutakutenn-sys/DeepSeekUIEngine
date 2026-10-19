@@ -38,6 +38,3 @@ SOFTWARE.
 
 The build preserves the production dependencies' license texts, nested notices,
 and retained source attributions in `THIRD_PARTY_NOTICES.txt` in the distribution.
-See [THIRD_PARTY_LICENSE_AUDIT.md](THIRD_PARTY_LICENSE_AUDIT.md) for pinned sources,
-actual bundled-module coverage, and the unresolved BSL/MIT scope in
-`interval-arithmetic@1.1.3`. Including both statements does not resolve that ambiguity.

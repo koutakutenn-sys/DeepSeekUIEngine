@@ -81,5 +81,3 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 for third-party copyright and license notices.
 
 构建会将该通知复制到 `dist/THIRD_PARTY_NOTICES.md`，并保留生产依赖许可证汇总 `dist/THIRD_PARTY_NOTICES.txt`。
-
-[许可证审查记录](THIRD_PARTY_LICENSE_AUDIT.md) 区分实际保留模块、补充许可来源及未解决的 `interval-arithmetic@1.1.3` BSL/MIT 范围问题。构建同时输出模块和许可证覆盖清单；审查版本或分发范围变化时须重新核对。
