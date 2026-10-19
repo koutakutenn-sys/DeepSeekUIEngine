@@ -31,7 +31,7 @@ function Popup() {
     finally { setSaving(false); }
   };
   return <main>
-    <header><div className="logo" aria-hidden="true">✧</div><div><h1>DeepSeek UI Engine</h1><p>让信息有更清晰的表达</p></div><span className="version">v0.1</span></header>
+    <header><div className="logo" aria-hidden="true">✧</div><div><h1>DeepSeek UI Engine</h1><p>让信息有更清晰的表达</p></div><span className="version">v0.2</span></header>
     <div className="section-label">智能 UI 模式<span>本地运行</span></div>
     <fieldset disabled={!ready || saving}><legend className="sr-only">选择智能 UI 模式</legend>
       {choices.map((choice) => <label key={choice.mode} className={`choice ${mode === choice.mode ? 'selected' : ''}`}>

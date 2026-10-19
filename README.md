@@ -1,6 +1,10 @@
 # DeepSeek UI Engine
 
+[简体中文](README.md) | [繁體中文（香港）](README.zh-HK.md) | [English](README.en.md)
+
 为 DeepSeek 官方 Chat 网页原位添加指标卡片、柱状图、可排序表格、可展开时间轴和交互初等函数图的 Manifest V3 扩展。
+
+更新记录：[changelog.txt](changelog.txt)。
 
 ## 构建与安装
 
@@ -59,8 +63,6 @@ function-plot 迁移验证覆盖 32 个初等函数案例、已知数学坐标�
 安装依赖时禁用生命周期脚本。构建临时文件位于 `.cache/tmp`，不改变系统环境。`dist`、缓存、测试结果不纳入 Git。
 
 代码入口：`src/protocol.ts`（校验）、`src/prompt.ts`（协议提示）、`src/content/adapter.ts`（官方网页选择器）、`src/content/engine.ts`（观察与生命周期）、`src/components`（视图）、`src/popup`（设置）。[协议说明](docs/protocol.md) 包含全部格式与示例。
-
-[已知问题与后续需求](docs/KNOWN_ISSUES.md) 跟踪滑块精度反馈及通用函数图像的实现范围。
 
 ## 隐私与边界
 

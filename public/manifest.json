@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeepSeek UI Engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "为 DeepSeek 官方聊天添加安全的指标、图表、表格与时间轴。",
   "minimum_chrome_version": "120",
   "permissions": ["storage"],
