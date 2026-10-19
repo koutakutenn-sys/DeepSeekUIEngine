@@ -58,6 +58,8 @@ npm run test:e2e
 
 代码入口：`src/protocol.ts`（校验）、`src/prompt.ts`（协议提示）、`src/content/adapter.ts`（官方网页选择器）、`src/content/engine.ts`（观察与生命周期）、`src/components`（视图）、`src/popup`（设置）。[协议说明](docs/protocol.md) 包含全部格式与示例。
 
+[已知问题与后续需求](docs/KNOWN_ISSUES.md) 记录滑块浮点精度反馈及任意函数图像的扩展需求。
+
 ## 隐私与边界
 
 - 仅在 `https://chat.deepseek.com/*` 自动运行，只申请 `storage` 权限，仅持久保存模式。
