@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validateExpression } from './math/plot-expression.ts';
 
 const shortText = z.string().min(1).max(160);
 const text = z.string().max(2000);
@@ -41,7 +42,7 @@ export const PLOT_LIMITS = { coefficient: 10_000, coordinate: 1_000_000, minSpan
 const coefficient = number.min(-PLOT_LIMITS.coefficient).max(PLOT_LIMITS.coefficient);
 const coordinate = number.min(-PLOT_LIMITS.coordinate).max(PLOT_LIMITS.coordinate);
 const plotParameter = z.strictObject({
-  key: z.enum(['a', 'b', 'c']), label: shortText,
+  key: z.enum(['a', 'b', 'c', 'd', 'p', 'q']), label: shortText,
   value: coefficient, min: coefficient, max: coefficient,
   step: number.min(PLOT_LIMITS.minStep).max(2 * PLOT_LIMITS.coefficient),
 }).refine((p) => p.max - p.min >= PLOT_LIMITS.minStep && p.min <= p.value && p.value <= p.max,
@@ -49,12 +50,21 @@ const plotParameter = z.strictObject({
 const viewportSchema = z.strictObject({ xMin: coordinate, xMax: coordinate, yMin: coordinate, yMax: coordinate })
   .refine((v) => [v.xMax - v.xMin, v.yMax - v.yMin].every((span) => span >= PLOT_LIMITS.minSpan && span <= PLOT_LIMITS.maxSpan),
     { message: 'Viewport spans must be between 0.001 and 1000000' });
-const functionPlotSchema = z.strictObject({
+const quadraticPlotSchema = z.strictObject({
   ...base, type: z.literal('function_plot'), preset: z.literal('quadratic'),
-  parameters: z.array(plotParameter).length(3).refine((p) => new Set(p.map((entry) => entry.key)).size === 3,
+  parameters: z.array(plotParameter).length(3).refine((p) => new Set(p.map((entry) => entry.key)).size === 3 && p.every((entry) => ['a', 'b', 'c'].includes(entry.key)),
     { message: 'Parameters must contain exactly a, b and c' }),
   viewport: viewportSchema,
 });
+const expressionPlotSchema = z.strictObject({
+  ...base, type: z.literal('function_plot'), preset: z.literal('expression'),
+  expression: z.string().min(1).max(256),
+  parameters: z.array(plotParameter).max(6).refine((p) => new Set(p.map((entry) => entry.key)).size === p.length,
+    { message: 'Parameters must be unique' }),
+  viewport: viewportSchema,
+}).refine((block) => validateExpression(block.expression, block.parameters.map((p) => p.key)),
+  { message: 'Unsupported or unsafe mathematical expression' });
+const functionPlotSchema = z.discriminatedUnion('preset', [quadraticPlotSchema, expressionPlotSchema]);
 
 export const payloadSchema = z.strictObject({
   protocol: z.literal('dsui'), version: z.literal(1),

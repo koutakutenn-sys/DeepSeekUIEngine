@@ -13,6 +13,8 @@ assert.equal(manifest.background, undefined);
 assert.equal(manifest.host_permissions, undefined);
 assert.equal(manifest.web_accessible_resources, undefined);
 for (const file of [...manifest.content_scripts[0].js, manifest.action.default_popup]) await access(join(output, file));
+const notices = await readFile(join(output, 'THIRD_PARTY_NOTICES.txt'), 'utf8');
+assert(notices.includes('function-plot@1.26.0') && notices.includes('Copyright (c) 2015 Mauricio Poppe'), 'Preserve upstream plotting notices');
 const schema = JSON.parse(await readFile(join(output, 'dsui.schema.json'), 'utf8'));
 assert.equal(schema.properties.blocks.maxItems, 3);
 const content = await readFile(join(output, 'content.js'), 'utf8');

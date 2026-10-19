@@ -3,8 +3,51 @@ import { describe, expect, it } from 'vitest';
 import { BlockView } from '../src/components/BlockView';
 import { parsePayload } from '../src/protocol';
 import { payload, quadratic } from './fixtures';
+import { Chart } from 'function-plot';
+import { elementaryFunctions } from './elementary-functions';
+import type { Bounds } from '../src/math/plot-expression';
 
 describe('function plot interactions', () => {
+  it('redraws expression parameters and keeps decimal keyboard values exact', () => {
+    const block = parsePayload(payload([{ ...quadratic, preset: 'expression', expression: 'a*sin(x)',
+      parameters: [{ ...quadratic.parameters[0], value: 0.1 }] }]))!.blocks[0];
+    const { container } = render(<BlockView block={block} />);
+    const curve = () => container.querySelector('[data-plot-curve]')!.getAttribute('d');
+    const before = curve();
+    const slider = screen.getByRole('slider', { name: 'a' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' }); fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect((slider as HTMLInputElement).value).toBe('0.3');
+    expect(curve()).not.toBe(before);
+    fireEvent.click(screen.getByRole('button', { name: '复位参数' }));
+    expect((slider as HTMLInputElement).value).toBe('0.1'); expect(curve()).toBe(before);
+  });
+  it('explains an empty real domain or a curve outside the viewport', () => {
+    const block = parsePayload(payload([{ ...quadratic, preset: 'expression', expression: 'sqrt(-1)', parameters: [] }]))!.blocks[0];
+    render(<BlockView block={block} />);
+    expect(screen.getByText(/当前视口内没有可见曲线/)).toBeTruthy();
+  });
+  it.each(['exp(1000)', '-exp(1000)', 'sinh(1000)', '1e308*1e308', 'exp(x)'])('omits overflowed %s without full-height SVG strokes', (expression) => {
+    const block = parsePayload(payload([{ ...quadratic, preset: 'expression', expression, parameters: [],
+      viewport: { xMin: 999, xMax: 1000, yMin: -4, yMax: 4 } }]))!.blocks[0];
+    const { container } = render(<BlockView block={block} />);
+    expect(container.querySelector('[data-plot-curve]')!.getAttribute('d')).toBe('');
+    expect(screen.getByText(/当前视口内没有可见曲线/)).toBeTruthy();
+  });
+  it.each(elementaryFunctions)('renders %s with the upstream interval sampler at %s', (expression, x, expected) => {
+    const before = Object.keys(Chart.cache).length;
+    const block = parsePayload(payload([{ ...quadratic, preset: 'expression', expression, parameters: [],
+      viewport: { xMin: Math.min(-4, x - 2), xMax: Math.max(4, x + 2), yMin: Math.min(-4, expected - 2), yMax: Math.max(4, expected + 2) } }]))!.blocks[0];
+    const { container, unmount } = render(<BlockView block={block} />);
+    const curve = container.querySelector('[data-plot-curve]') as SVGPathElement & { __data__: ([Bounds, Bounds] | null)[] };
+    expect(curve.getAttribute('d')).toMatch(/M .+ v /);
+    expect(curve.getAttribute('d')).not.toMatch(/NaN|Infinity/);
+    const sample = curve.__data__.find((sample) => sample && sample[0].lo <= x && sample[0].hi >= x)!;
+    expect(sample[1].lo).toBeLessThanOrEqual(expected + 1e-10);
+    expect(sample[1].hi).toBeGreaterThanOrEqual(expected - 1e-10);
+    expect(Object.keys(Chart.cache).length).toBe(before + 1);
+    unmount();
+    expect(Object.keys(Chart.cache).length).toBe(before);
+  });
   it('shows y=x², redraws downward/linear/constant curves and resets defaults', () => {
     const { container } = render(<BlockView block={parsePayload(payload([quadratic]))!.blocks[0]} />);
     const curve = () => container.querySelector('[data-plot-curve]')!.getAttribute('d');

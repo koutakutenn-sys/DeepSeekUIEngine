@@ -2,6 +2,7 @@ import { test, expect, chromium, type BrowserContext, type Page } from '@playwri
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { metrics, chart, table, timeline, payload, quadratic } from '../fixtures';
+import { elementaryFunctions } from '../elementary-functions';
 
 const fixture = `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><title>DeepSeek DOM test fixture</title>
 <style>
@@ -229,7 +230,7 @@ test('quadratic plot stays local through keyboard, mouse, theme, resize and raw 
     await page.locator('html').evaluate((node) => node.classList.add('dark'));
     await page.setViewportSize({ width: 320, height: 844 });
     await expect(page.locator('[data-dsui-host]')).toHaveAttribute('data-theme', 'dark');
-    await expect.poll(() => plot.getAttribute('viewBox')).not.toBe(`0 0 ${box.width} 290`);
+    await expect.poll(async () => Number(await plot.locator('svg').getAttribute('width'))).toBeLessThan(box.width);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(page.locator('.plot-formula')).toHaveText('y = x²');
     expect(await page.locator('[data-dsui-host]').evaluate((node) => (window as unknown as { plotHost: Element }).plotHost === node)).toBe(true);
@@ -287,4 +288,72 @@ test('quadratic plot contains touch drag and pinch gestures without scrolling th
   await page.getByRole('button', { name: '复位参数', exact: true }).click();
   await expect(a).toHaveValue('1');
   await cdp.detach();
+});
+
+test('function-plot renders 32 elementary expressions with correct samples and domain gaps in MV3', async ({}, testInfo) => {
+  await page.setViewportSize({ width: 1024, height: 1000 });
+  await page.goto('https://chat.deepseek.com/');
+  const errors: string[] = []; const requests: string[] = [];
+  const onError = (error: Error) => errors.push(error.message);
+  const onRequest = (request: { url(): string }) => requests.push(request.url());
+  page.on('pageerror', onError); page.on('request', onRequest);
+  const source = page.locator('#stream');
+  const show = async (expression: string, x = 0, y = 0) => {
+    await source.evaluate((node, text) => { node.textContent = text; }, payload([{ ...quadratic,
+      title: '初等函数图像', preset: 'expression', expression, parameters: [],
+      viewport: { xMin: Math.min(-4, x - 2), xMax: Math.max(4, x + 2), yMin: Math.min(-4, y - 2), yMax: Math.max(4, y + 2) } }]));
+    await expect(page.locator('.plot-formula')).toHaveText(`y = ${expression}`);
+    const curve = page.locator('[data-plot-curve]');
+    await expect(curve).toHaveAttribute('d', /M .+ v /);
+    await expect(curve).not.toHaveAttribute('d', /NaN|Infinity/);
+    return curve;
+  };
+  try {
+    for (const [expression, x, y] of elementaryFunctions) {
+      const curve = await show(expression, x, y);
+      // Inspect actual SVG pixels. MV3 correctly isolates D3's __data__ from the page.
+      const containsPoint = await curve.evaluate((node, { x, y }) => {
+        const svg = (node as SVGPathElement).ownerSVGElement!;
+        const canvas = svg.querySelector('.zoom-and-drag')!;
+        const width = Number(canvas.getAttribute('width')); const height = Number(canvas.getAttribute('height'));
+        const xMin = Math.min(-4, x - 2); const xMax = Math.max(4, x + 2);
+        const yMin = Math.min(-4, y - 2); const yMax = Math.max(4, y + 2);
+        const px = (x - xMin) / (xMax - xMin) * width; const py = (yMax - y) / (yMax - yMin) * height;
+        const halfWidth = Number(node.getAttribute('stroke-width')) / 2;
+        const segments = [...node.getAttribute('d')!.matchAll(/M\s+(\S+)\s+(\S+)\s+v\s+(\S+)/g)];
+        const contains = (pixelY: number) => segments.some(([, sx, sy, length]) => Math.abs(Number(sx) - px) <= halfWidth + 0.01
+          && pixelY >= Number(sy) - 0.1 && pixelY <= Number(sy) + Number(length) + 0.1);
+        return { correct: contains(py), shifted: contains(py - height / (yMax - yMin)) };
+      }, { x, y });
+      expect(containsPoint.correct, `${expression} passes through (${x}, ${y})`).toBe(true);
+      if (expression === 'x') expect(containsPoint.shifted, 'negative control: y=x must not pass through (2,3)').toBe(false);
+    }
+    const hole = await show('sqrt(x^2-1)');
+    expect(await hole.evaluate((node) => {
+      const width = Number((node as SVGPathElement).ownerSVGElement!.querySelector('.zoom-and-drag')!.getAttribute('width'));
+      return [...node.getAttribute('d')!.matchAll(/M\s+(\S+)\s+(\S+)\s+v\s+(\S+)/g)]
+        .some(([, sx]) => Math.abs(Number(sx) / width * 8 - 4) < 0.9);
+    })).toBe(false);
+    await page.screenshot({ path: testInfo.outputPath('elementary-domain-gap.png'), fullPage: true });
+    const pole = await show('1/x');
+    expect(await pole.evaluate((node) => {
+      const height = Number((node as SVGPathElement).ownerSVGElement!.querySelector('.zoom-and-drag')!.getAttribute('height'));
+      return [...node.getAttribute('d')!.matchAll(/M\s+(\S+)\s+(\S+)\s+v\s+(\S+)/g)]
+        .some(([, , sy, length]) => Number(sy) <= 0 && Number(length) >= height);
+    })).toBe(false);
+    await page.screenshot({ path: testInfo.outputPath('elementary-reciprocal.png'), fullPage: true });
+    for (const expression of ['exp(1000)', '-exp(1000)', 'sinh(1000)', '1e308*1e308']) {
+      await source.evaluate((node, text) => { node.textContent = text; }, payload([{ ...quadratic,
+        preset: 'expression', expression, parameters: [] }]));
+      await expect(page.locator('.plot-formula')).toHaveText(`y = ${expression}`);
+      await expect(page.locator('[data-plot-curve]')).toHaveAttribute('d', '');
+      await expect(page.getByText(/当前视口内没有可见曲线/)).toBeVisible();
+    }
+    // Invalid expressions restore raw source rather than becoming executable code.
+    await source.evaluate((node, text) => { node.textContent = text; }, payload([{ ...quadratic,
+      preset: 'expression', expression: 'x.constructor', parameters: [] }]));
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+    await expect(source).toBeVisible();
+    expect(errors).toEqual([]); expect(requests).toEqual([]);
+  } finally { page.off('pageerror', onError); page.off('request', onRequest); }
 });

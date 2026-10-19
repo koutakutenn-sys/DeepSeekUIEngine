@@ -11,6 +11,7 @@ for (const args of [
   ['node_modules/vite/bin/vite.js', 'build', '--config', 'vite.content.config.ts'],
   ['node_modules/vite/bin/vite.js', 'build', '--config', 'vite.popup.config.ts'],
   ['scripts/export-schema.mjs'],
+  ['scripts/export-licenses.mjs'],
   ['scripts/verify-build.mjs'],
 ]) {
   const result = spawnSync(process.execPath, args, { stdio: 'inherit', env: environment });

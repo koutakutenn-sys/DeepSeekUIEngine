@@ -75,7 +75,7 @@
 
 ## function_plot
 
-仅支持本地预设 `quadratic`：`y = ax² + bx + c`。不支持模型传入表达式、样式、颜色、事件、URL 或采样点。
+支持兼容预设 `quadratic`（`y = ax² + bx + c`）以及下文的 `expression` 数学表达式模式。禁止模型传入样式、颜色、事件、URL 或采样点。两种模式均使用 function-plot 渲染。
 
 ```dsui
 {
@@ -92,9 +92,9 @@
 }
 ```
 
-参数必须恰好包含 `a`、`b`、`c` 各一次，每项只有 `key/label/value/min/max/step`；`label` 为 1–160 字符。所有数字有限，`value/min/max` 绝对值不超过 10,000，`min ≤ value ≤ max`，`max - min ≥ 0.000001`；`step` 在 0.000001–20,000 之间。默认值无需与步长对齐，初次显示和复位保留精确默认值；鼠标/触屏滑动按步长吸附，键盘方向键增减一个步长、PageUp/PageDown 增减十步、Home/End 取端点。
+参数必须恰好包含 `a`、`b`、`c` 各一次，每项只有 `key/label/value/min/max/step`；`label` 为 1–160 字符。所有数字有限，`value/min/max` 绝对值不超过 10,000，`min ≤ value ≤ max`，`max - min ≥ 0.000001`；`step` 在 0.000001–20,000 之间。滑块增减与吸附采用 decimal.js 十进制运算后转换为绘图库使用的数值。默认值无需与步长对齐，初次显示和复位保留精确默认值；鼠标/触屏滑动按步长吸附，键盘方向键增减一个步长、PageUp/PageDown 增减十步、Home/End 取端点。
 
-视口只接受 `xMin/xMax/yMin/yMax`，绝对值不超过 1,000,000；各轴跨度在 0.001–1,000,000 之间。交互也限制到这些边界。每次绘制最多 1,025 个采样点（包含可见顶点），每轴最多 20 个刻度；采样由本地计算，与柱状图的 30 点限制无关。曲线超出视口时裁剪，无可见曲线时显示提示。
+视口只接受 `xMin/xMax/yMin/yMax`，绝对值不超过 1,000,000；各轴跨度在 0.001–1,000,000 之间。交互也限制到这些边界。每次绘制设置 256–1,024 个采样边界点，由 function-plot 的区间采样器计算，刻度由 D3 生成；与柱状图的 30 点限制无关。曲线超出视口时裁剪，无可见曲线时显示提示。
 
 坐标很大而视口跨度很小时，刻度使用共同偏移量，并在图下明确显示换算关系，避免相邻坐标被四舍五入为相同文字。
 
@@ -105,3 +105,32 @@
 ## 安全回退
 
 不解析或执行 HTML，不执行 JavaScript，不对文本中的链接做自动导航。每个代码块整体校验后才渲染；原始 DOM 留在页面，切换 Off、JSON 继续变化为非法值、组件异常或扩展卸载清理时恢复原文。Shadow DOM 隔离样式，模型不能传入自定义颜色、样式、HTML 或事件处理器。
+
+### 通用初等函数表达式
+
+`preset: "expression"` 通过 [mauriciopoppe/function-plot](https://github.com/mauriciopoppe/function-plot) 1.26.0 绘制显式实函数 `y = f(x)`：
+
+```dsui
+{
+  "protocol": "dsui", "version": 1,
+  "blocks": [{
+    "id": "sine-1", "type": "function_plot", "title": "正弦函数", "preset": "expression",
+    "expression": "a*sin(x)+b",
+    "parameters": [
+      { "key": "a", "label": "振幅 a", "value": 1, "min": -5, "max": 5, "step": 0.1 },
+      { "key": "b", "label": "偏移 b", "value": 0, "min": -5, "max": 5, "step": 0.1 }
+    ],
+    "viewport": { "xMin": -8, "xMax": 8, "yMin": -6, "yMax": 6 }
+  }]
+}
+```
+
+- `expression` 为 1–256 字符，最多 64 个 AST 节点，深度不超过 16。变量只有 `x`、常数 `pi/e` 和已声明参数。
+- `parameters` 必填，无参数时为 `[]`；最多六个，键仅 `a/b/c/d/p/q`，不得重复；数值、滑块、视口上限沿用上文。
+- 运算：`+ - * / ^`、一元正负号及括号；乘法建议显式写 `*`，幂使用 `^`。`-x^2` 表示 `-(x^2)`。
+- 单参数函数：`sin/cos/tan/asin/acos/atan/sinh/cosh/tanh/exp/log/ln/log10/log2/sqrt/cbrt/abs`。`log/ln` 是自然对数，所有角度均为弧度。负数实立方根使用 `cbrt(x)`；分数幂遵循非负实底数约定。
+- 拒绝赋值、对象访问、数组、条件/比较表达式、函数定义、单位、任意函数调用和 JavaScript；未知语法使整个代码块回退原文。JSON Schema 只能描述结构，表达式白名单和复杂度还须通过运行时检查。
+- mathjs 解析 AST，受限适配层把 AST 转为可信数值/区间回调。`function-plot` 负责区间采样、SVG、坐标轴和 D3 缩放/拖动。构建将上游未使用的动态字符串编译器替换为拒绝入口，不启用 `eval`、`Function`、远程脚本或新权限。
+- 当前只开放单条显式实函数；隐函数、参数曲线、极坐标、分段条件式、复数和符号求导不在本次范围内。固定采样有分辨率限制，不能保证极高频振荡或所有病态函数的数学完整性。
+
+32 个初等函数案例与断点检查见[函数图库迁移验证](FUNCTION_PLOT_VALIDATION.md)。
