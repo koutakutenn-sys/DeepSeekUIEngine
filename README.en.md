@@ -107,7 +107,7 @@ Code entry points: `src/protocol.ts` (validation), `src/prompt.ts` (protocol ins
 - Does not intercept network requests; it operates through the official input and page DOM.
 - Scripts and styles are bundled locally. The extension loads no remote code and executes no model-provided HTML or JavaScript. React escapes all text.
 - Invalid, oversized, unknown-version, or failed components keep the original Markdown. Incomplete streaming JSON never hides the original content.
-- Bidirectional/invisible formatting controls (except legitimate ZWJ/ZWNJ joiners) and unsafe control characters are rejected. Labels must be single-line; descriptions may retain line breaks. Invalid data falls back to the original source without silent rewriting.
+- Bidirectional/invisible formatting controls are rejected, except legitimate ZWJ/ZWNJ joiners and the complete RGI subdivision-flag tag sequences (England, Scotland, Wales); unsafe control characters are also rejected. Labels must be single-line; descriptions may retain line breaks. Invalid data falls back to the original source without silent rewriting.
 - The DeepSeek page DOM is not a public, stable interface. Site updates may require adapter changes; fixture tests cannot replace real-site compatibility checks.
 
 ## License

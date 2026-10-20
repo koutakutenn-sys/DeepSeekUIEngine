@@ -4,6 +4,10 @@ export type Source = { element: HTMLElement; text: string };
 const assistantSelector = '[data-message-author-role="assistant"], [data-role="assistant"], [data-testid="assistant-message"]';
 const userSelector = '[data-message-author-role="user"], [data-role="user"], [data-testid="user-message"]';
 
+/** A conflicting identifier always vetoes a positive label or the icon fallback. */
+const conflictingActionIdentifier = /stop|停止|feedback|反馈|search|搜索|attach|附件|upload|上传/i;
+const sendActionLabel = /^(发送(?:消息)?|send(?: message)?)$/i;
+
 /** DeepSeek's hashed CSS classes are deliberately excluded from this boundary. */
 export function findMessages(doc: Document): HTMLElement[] {
   const messages = new Set<HTMLElement>();
@@ -57,7 +61,7 @@ function isVisibleControl(button: HTMLElement): boolean {
   for (let node: HTMLElement | null = button; node; node = node.parentElement) {
     if (node.hidden || node.hasAttribute('inert') || node.getAttribute('aria-hidden') === 'true') return false;
     const style = node.ownerDocument.defaultView?.getComputedStyle(node);
-    if (style?.display === 'none' || style?.visibility === 'hidden' || style?.visibility === 'collapse' || style?.opacity === '0') return false;
+    if (style?.display === 'none' || style?.visibility === 'hidden' || style?.visibility === 'collapse' || style?.opacity === '0' || style?.contentVisibility === 'hidden') return false;
   }
   return true;
 }
@@ -66,11 +70,20 @@ export function isDisabled(button: HTMLElement | null): boolean {
   return !!button && (button.hasAttribute('disabled') || button.getAttribute('aria-disabled') === 'true' || button.classList.contains('ds-icon-button--disabled') || button.classList.contains('ds-button--disabled'));
 }
 
+/** Every identifier a control can use to announce its action, attributes included. */
+function actionIdentifiers(button: HTMLElement): string[] {
+  return [button.getAttribute('aria-label'), button.getAttribute('title'), button.getAttribute('data-testid'), button.id, button.getAttribute('name'), button.textContent]
+    .map((identifier) => identifier?.trim() ?? '')
+    .filter(Boolean);
+}
+
 export function isSendAction(button: HTMLElement | null): boolean {
   if (!button) return false;
+  // Negative identifiers win even when a Send label or the official icon is present;
+  // DeepSeek reuses one primary button for both Send and Stop during generation.
+  if (actionIdentifiers(button).some((identifier) => conflictingActionIdentifier.test(identifier))) return false;
   const labels = [button.getAttribute('aria-label'), button.getAttribute('title'), button.textContent].map((label) => label?.trim() ?? '').filter(Boolean);
-  if (labels.some((label) => /stop|停止|feedback|反馈|search|搜索|attach|附件|upload|上传/i.test(label))) return false;
-  if (labels.length) return labels.every((label) => /^(发送(?:消息)?|send(?: message)?)$/i.test(label));
+  if (labels.length) return labels.every((label) => sendActionLabel.test(label));
   if (button.getAttribute('data-testid') === 'send-button') return true;
   // The current official unlabeled control has this upward-arrow path. Unknown
   // icons (especially Stop during generation) are never clicked automatically.

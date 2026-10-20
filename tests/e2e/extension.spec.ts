@@ -142,6 +142,39 @@ test('security hardening: Unicode controls preserve raw source while valid RTL a
   await expect(rows.nth(3).getByRole('cell')).toHaveText(['缺失', '—']);
 });
 
+test('security hardening: activation never clicks a newly hidden or Stop-identified control', async () => {
+  await selectMode(/Auto/);
+  for (const boundary of ['hidden', 'stop']) {
+    await page.goto(`https://chat.deepseek.com/a/chat/s/security-${boundary}-switch`);
+    // The fixture's controlled send action is a div[role=button], matching the official icon control.
+    await page.locator('form').evaluate((form, change) => {
+      const input = form.querySelector('textarea')!, control = form.querySelector<HTMLElement>('[role="button"]')!;
+      const wrapper = document.createElement('div'); control.before(wrapper); wrapper.append(control);
+      control.addEventListener('click', () => { control.dataset.clicked = 'true'; });
+      input.addEventListener('input', () => {
+        if (change === 'hidden') wrapper.style.contentVisibility = 'hidden';
+        else control.dataset.testid = 'stop-button';
+      });
+    }, boundary);
+    await page.getByRole('button', { name: '启用 UI', exact: true }).click();
+    await expect(page.locator('textarea')).toHaveValue('');
+    await expect(page.locator('#sent')).toBeEmpty();
+    await expect(page.locator('form [role="button"]')).not.toHaveAttribute('data-clicked');
+  }
+});
+
+test('security hardening: complete subdivision emoji flags render while stray hidden tags preserve raw source', async () => {
+  const title = '英格兰\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+  await showP1([{ ...infoCard, title }]);
+  const heading = page.getByRole('heading', { name: /英格兰/ });
+  await expect(heading).toBeVisible();
+  expect(await heading.textContent()).toBe(title);
+  const unsafe = payload([{ ...infoCard, title: '隐藏\u{E0067}文字' }]);
+  await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, unsafe);
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  expect(await page.locator('#stream').textContent()).toBe(unsafe);
+});
+
 test('P1 charts render real SVG, preserve line gaps and expose exact values without invented empty samples', async ({}, testInfo) => {
   const errors: string[] = [];
   const onError = (error: Error) => errors.push(error.message);

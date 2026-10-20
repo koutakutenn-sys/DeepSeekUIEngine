@@ -5,9 +5,14 @@ z.config({ jitless: true });
 
 // Keep legitimate emoji/Persian joiners; reject other hidden format controls and unsafe C0/C1 controls.
 const unsafeText = /(?:(?![\u200c\u200d])\p{Cf})|[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u;
+// Unicode RGI_Emoji_Tag_Sequence has exactly three members (England, Scotland, Wales); their subdivision
+// letters are Cf tag characters. Only these exact, complete sequences are exempted from the Cf scan below.
+const rgiSubdivisionFlag = /\u{1F3F4}\u{E0067}\u{E0062}(?:\u{E0065}\u{E006E}\u{E0067}|\u{E0073}\u{E0063}\u{E0074}|\u{E0077}\u{E006C}\u{E0073})\u{E007F}/gu;
+// Strip those whole sequences only for the check; the validated payload is never rewritten or normalized.
+const hasUnsafeText = (value: string) => unsafeText.test(value.replace(rgiSubdivisionFlag, ''));
 const lineBreak = /[\r\n\t\u2028\u2029]/u;
 const boundedText = (max: number, multiline = false) => z.string().max(max)
-  .refine((value) => !unsafeText.test(value) && (multiline || !lineBreak.test(value)), { message: 'Unsafe text controls or multiline label' });
+  .refine((value) => !hasUnsafeText(value) && (multiline || !lineBreak.test(value)), { message: 'Unsafe text controls or multiline label' });
 const shortText = boundedText(160).min(1);
 const text = boundedText(2000, true);
 const number = z.number().finite();

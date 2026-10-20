@@ -30,4 +30,11 @@ describe('model text integrity', () => {
     const parsed = parsePayload(payload([{ ...infoCard, title, description }]));
     expect(parsed?.blocks[0]).toMatchObject({ title, description });
   });
+  it.each(['\u{E0065}\u{E006E}\u{E0067}', '\u{E0073}\u{E0063}\u{E0074}', '\u{E0077}\u{E006C}\u{E0073}'])('preserves a complete RGI subdivision flag %j without changing the payload', (suffix) => {
+    const title = `旗帜\u{1F3F4}\u{E0067}\u{E0062}${suffix}\u{E007F}`;
+    expect(parsePayload(payload([{ ...infoCard, title }]))?.blocks[0].title).toBe(title);
+  });
+  it.each(['\u{E0067}', '\u{E007F}', '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}', '\u{1F3F4}\u{E0067}\u{E0062}\u{E0078}\u{E007F}'])('rejects stray or incomplete hidden emoji tags %j', (tags) => {
+    expect(parsePayload(payload([{ ...infoCard, title: `正常${tags}文字` }]))).toBeNull();
+  });
 });

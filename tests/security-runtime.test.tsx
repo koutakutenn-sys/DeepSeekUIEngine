@@ -50,6 +50,24 @@ describe('security audit interaction regressions', () => {
     document.querySelector('button')!.hidden = true;
     expect(findSendButton(input)).toBe(document.querySelector('[aria-label="发送消息"]'));
   });
+  it.each(['stop-button', 'feedback-submit', 'search-button', 'attachment-upload'])('rejects conflicting %s identifiers despite a Send label', (id) => {
+    document.body.innerHTML = `<form><textarea id="chat-input"></textarea><button aria-label="Send" data-testid="${id}"></button></form>`;
+    expect(findSendButton(findComposer(document)!)).toBeNull();
+  });
+  it('does not click a control that switches to Stop by identifier during input', async () => {
+    document.body.innerHTML = '<form><textarea id="chat-input"></textarea><button type="button" aria-label="Send" data-testid="send-button"></button></form>';
+    const input = document.querySelector('textarea')!, button = document.querySelector('button')!;
+    let clicks = 0;
+    button.addEventListener('click', () => { clicks++; input.value = ''; });
+    input.addEventListener('input', () => { button.dataset.testid = 'stop-button'; });
+    expect(await sendActivationPrompt(document, 'auto', () => false)).toBe(false);
+    expect(clicks).toBe(0);
+    expect(input.value).toBe('');
+  });
+  it('ignores content-visibility:hidden on a control ancestor', () => {
+    document.body.innerHTML = '<form><textarea id="chat-input"></textarea><div style="content-visibility:hidden"><button aria-label="Send"></button></div></form>';
+    expect(findSendButton(findComposer(document)!)).toBeNull();
+  });
   it('never submits feedback after the send control changes during the controlled-input update', async () => {
     document.body.innerHTML = '<form><textarea id="chat-input"></textarea><button type="submit" aria-label="发送">发送</button></form>';
     const input = document.querySelector('textarea')!, button = document.querySelector('button')!;
