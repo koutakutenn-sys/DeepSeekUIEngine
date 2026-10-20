@@ -45,9 +45,9 @@ The enable button is temporarily disabled when there is an unsent draft, an acti
 
 The extension supports the official `.md-code-block` / `<pre><span>…</span></pre>` structure and Markdown code blocks with language classes. Both `dsui` and `json` labels are recognized, but the content must fully pass DSUI protocol validation. Ordinary JSON is not rendered as UI.
 
-## P1 rich UI (development branch)
+## P1 rich UI (v0.3)
 
-The current source adds the following components. They are not included in the published v0.2 release yet.
+Version v0.3 adds the following components.
 
 See the [P1 validation record](docs/P1_VALIDATION.md) for scope, test results, and outstanding acceptance checks.
 

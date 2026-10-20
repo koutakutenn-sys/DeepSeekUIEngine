@@ -45,9 +45,9 @@ npm run build
 
 支援官方實際使用的 `.md-code-block` / `<pre><span>…</span></pre>` 結構，以及帶語言類別的 Markdown 程式碼區塊。可辨識 `dsui` 和 `json` 標籤，但內容必須完整通過 DSUI 協定驗證；一般 JSON 不會呈現為 UI。
 
-## P1 常用富 UI（開發分支）
+## P1 常用富 UI（v0.3）
 
-目前原始碼新增以下元件，尚未包含於已發佈的 v0.2：
+v0.3 新增以下元件：
 
 實作範圍、測試結果及待驗收項目見 [P1 驗證記錄](docs/P1_VALIDATION.md)。
 
