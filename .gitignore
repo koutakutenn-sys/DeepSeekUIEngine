@@ -14,10 +14,15 @@ docs/DSUI_OPEN_SOURCE_REFERENCES.md
 # Local agent instructions and project planning documents
 AGENTS.md
 AGENTS.md.disable
+AGENTS-unattended-zh.md
 agents.md
 agents.md.disable
 DEVELOPMENT-ENVIRONMENT.md
 DEVELOPMENT-ENVIRONMENT.md.disable
 FEATURES.md
 features.md
+SUBAGENT-GUIDANCE.md
 docs/superpowers/
+
+# Local-only internal documentation
+/docs/inner/
