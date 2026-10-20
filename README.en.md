@@ -49,7 +49,7 @@ The extension supports the official `.md-code-block` / `<pre><span>…</span></p
 
 Version v0.3 adds the following components.
 
-See the [P1 validation record](docs/P1_VALIDATION.md) for scope, test results, and outstanding acceptance checks.
+See the [P1 validation record](docs/P1_VALIDATION.md) for scope, automated test results, and manual acceptance status.
 
 | Type | Capability |
 | --- | --- |
@@ -94,7 +94,7 @@ GitHub Actions runs these checks on Node.js 22 for pushes to `main`, pull reques
 
 Browser tests download a project-private Chromium into `.cache/ms-playwright` and load the actual extension build with an isolated test configuration. The fixtures use code-block structures observed on the signed-in official site, real React controlled inputs, and page send controls. Tests intercept requests to the official domain and send no real chat messages. Coverage includes the existing and P1 components, streaming completion, mode switching, restoring original text, manual enablement, draft protection, unchanged ordinary messages, conversation deduplication, new conversation IDs, history-marker refresh, sorting, expansion, dark mode, and narrow screens. Function-plot checks also cover mouse, touch, and keyboard slider input, panning and zooming, pinch gestures, and preserving local state when trailing whitespace arrives after streaming completion. P1 additionally checks multi-series gaps, empty data, keyboard panel navigation, restored hidden panels, and reply budgets across code fences. Screenshots are written to `test-results`. Fixture tests and signed-in checks on the real website are recorded separately.
 
-The function-plot migration was checked against 32 elementary-function cases, known mathematical coordinates, domain gaps, and asymptotes. Commands and results are in the [validation record](docs/FUNCTION_PLOT_VALIDATION.md). An earlier visit to the real official site from a fresh isolated browser, without request interception, received CloudFront HTTP 403. The current checks use local fixtures; end-to-end compatibility in a signed-in official conversation has not been accepted, and fixture results do not replace that check. Reload `dist` in your usual browser, sign in to the official site, start a new conversation, enable UI, and check the protocol examples.
+Automated function-plot checks cover 32 elementary-function cases, known mathematical coordinates, domain gaps, and asymptotes. Commands and results are in the [validation record](docs/FUNCTION_PLOT_VALIDATION.md). The maintainer has confirmed completion of manual acceptance testing. The automated checks described here use local fixtures; the two forms of verification are recorded separately. After updating the extension, reload `dist` and refresh the DeepSeek page. Start a new conversation and enable UI to receive the latest formatting instructions.
 
 Dependency installation disables lifecycle scripts. Build temporary files stay in `.cache/tmp` without changing the system environment. `dist`, caches, and test results are excluded from Git.
 
