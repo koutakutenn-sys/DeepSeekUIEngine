@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { metrics, chart, table, timeline, payload, quadratic } from '../fixtures';
 import { elementaryFunctions } from '../elementary-functions';
+import { accordion, infoCard, lineChart, pieChart, progress, scatterChart, tabs } from '../p1-fixtures';
 
 const fixture = `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><title>DeepSeek DOM test fixture</title>
 <style>
@@ -65,6 +66,197 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => { await context?.close(); });
+test.afterEach(async ({}, testInfo) => {
+  if (testInfo.title.startsWith('P1')) {
+    await selectMode(/Auto/);
+    await page.setViewportSize({ width: 1024, height: 1000 });
+    await page.goto('https://chat.deepseek.com/');
+  }
+});
+
+async function showP1(blocks: unknown[]) {
+  await selectMode(/Auto/);
+  await page.goto('https://chat.deepseek.com/a/chat/s/p1-fixture');
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload(blocks));
+}
+
+test('P1 charts render real SVG, preserve line gaps and expose exact values without invented empty samples', async ({}, testInfo) => {
+  const errors: string[] = [];
+  const onError = (error: Error) => errors.push(error.message);
+  page.on('pageerror', onError);
+  try {
+    await showP1([lineChart, pieChart, scatterChart]);
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(1);
+    await expect(page.locator('.recharts-line')).toHaveCount(2);
+    await expect(page.locator('.recharts-line-dots')).toHaveCount(2);
+    await expect(page.locator('.recharts-line-dots').nth(0).locator('.recharts-line-dot')).toHaveCount(3);
+    const missingSeries = page.locator('.recharts-line').nth(1);
+    await expect(page.locator('.recharts-line-dots').nth(1).locator('.recharts-line-dot')).toHaveCount(2);
+    expect(await page.locator('.recharts-line-dot').evaluateAll((dots) => dots.every((dot) => getComputedStyle(dot).strokeDasharray === 'none'))).toBe(true);
+    for (const path of await missingSeries.locator('.recharts-line-curve').all()) {
+      expect(await path.getAttribute('d')).not.toMatch(/[LlCcSsQqTt]/); // Two isolated samples cannot form a segment across the missing day.
+    }
+    await expect(page.locator('.recharts-pie-sector')).toHaveCount(2);
+    await expect(page.locator('.recharts-scatter-symbol')).toHaveCount(2);
+    for (const summary of await page.getByText('查看数据', { exact: true }).all()) await summary.click();
+    const lineRows = page.getByRole('table', { name: '每周趋势原始数据' }).getByRole('row');
+    await expect(lineRows.nth(2).getByRole('cell')).toHaveText(['周二', '15', '—']);
+    const scatterRows = page.getByRole('table', { name: '实验坐标原始数据' }).getByRole('row');
+    await expect(scatterRows.nth(1).getByRole('cell')).toHaveText(['样本 A', '-3', '4']);
+    expect(await page.locator('[data-dsui-host] svg path').evaluateAll((paths) => paths.every((path) => !/NaN|Infinity/.test(path.getAttribute('d') ?? '')))).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('p1-charts-light.png'), fullPage: true });
+    await page.setViewportSize({ width: 360, height: 900 });
+    await page.locator('html').evaluate((node) => node.classList.add('dark'));
+    await expect(page.locator('[data-dsui-host]')).toHaveAttribute('data-theme', 'dark');
+    await expect.poll(() => page.locator('.dsui-root').evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('p1-charts-dark-mobile.png'), fullPage: true });
+    await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload([
+      { ...lineChart, items: [{ label: '缺失', values: { alpha: null, beta: null } }] },
+      { ...pieChart, items: [{ label: '零值', value: 0 }] }, { ...scatterChart, items: [] },
+    ]));
+    await expect(page.locator('[data-dsui-host]').getByRole('status')).toHaveCount(3);
+    await expect(page.locator('.recharts-line,.recharts-pie-sector,.recharts-scatter-symbol')).toHaveCount(0);
+    expect(errors).toEqual([]);
+  } finally { page.off('pageerror', onError); }
+});
+
+test('P1 charts render finite subnormal values without failing the whole reply', async () => {
+  // Smallest positive JS number is valid protocol data; dividing the span into nice ticks can underflow.
+  for (const [a, b] of [[-Number.MIN_VALUE, 0], [Number.MIN_VALUE, Number.MIN_VALUE],
+    [-Number.MIN_VALUE, Number.MIN_VALUE], [1e-301, 1.0000000000000002e-301], [0, Number.MIN_VALUE]]) {
+    await showP1([
+      { ...lineChart, series: [{ key: 'a', label: 'A' }], items: [
+        { label: '零', values: { a } }, { label: '最小正数', values: { a: b } },
+      ] },
+      { ...pieChart, items: [{ label: '最小正数', value: Number.MIN_VALUE }] },
+      { ...scatterChart, items: [{ x: a, y: a }, { x: b, y: b }] },
+    ]);
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(1);
+    await expect(page.locator('.recharts-surface')).toHaveCount(3);
+    await expect(page.locator('.recharts-line-dot')).toHaveCount(2);
+    await expect(page.locator('.recharts-pie-sector')).toHaveCount(1);
+    await expect(page.locator('.recharts-scatter-symbol')).toHaveCount(2);
+    if (a !== b) {
+      const y = await page.locator('.recharts-line-dot').evaluateAll((dots) => dots.map((dot) => Number(dot.getAttribute('cy'))));
+      expect(y[1]).toBeLessThan(y[0]); // Distinct values must remain distinct on screen, even at the smallest scale.
+    }
+    expect(await page.locator('[data-dsui-host] svg *').evaluateAll((nodes) => nodes.every((node) =>
+      [...node.attributes].every((attribute) => !/NaN|Infinity/.test(attribute.value))))).toBe(true);
+  }
+  for (const summary of await page.getByText('查看数据', { exact: true }).all()) await summary.click();
+  const smallest = '5e-324';
+  await expect(page.getByRole('table', { name: '每周趋势原始数据' }).getByRole('row').nth(2).getByRole('cell')).toHaveText(['最小正数', smallest]);
+  await expect(page.getByRole('table', { name: '实验坐标原始数据' }).getByRole('row').nth(2).getByRole('cell')).toHaveText(['数据点 2', smallest, smallest]);
+});
+
+test('P1 panels support keyboard/touch, preserve visited state and whitespace streams, and keep cards inert', async ({}, testInfo) => {
+  const literal = '<img src=x onerror=alert(1)>';
+  const interactiveTabs = { ...tabs, items: [
+    { ...tabs.items[0], blocks: [lineChart, { ...table, id: 'nested-table' }] },
+    { ...tabs.items[1], blocks: [{ ...infoCard, description: literal }, progress] },
+  ] };
+  await showP1([interactiveTabs, accordion]);
+  const trend = page.getByRole('tab', { name: '趋势', exact: true });
+  const summary = page.getByRole('tab', { name: '摘要', exact: true });
+  await expect(trend).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: /得分/ }).click();
+  await page.getByRole('button', { name: /得分/ }).click();
+  const rows = page.getByRole('table', { name: '对比详情', exact: true }).getByRole('row');
+  await expect(rows.nth(1).getByRole('cell').first()).toHaveText('A');
+  await trend.focus();
+  await trend.press('ArrowRight');
+  await expect(summary).toBeFocused();
+  await expect(page.getByRole('progressbar', { name: '开发进度' })).toHaveAttribute('value', '72.5');
+  await expect(page.getByText(literal, { exact: true })).toBeVisible();
+  await expect(page.locator('[data-dsui-host]').locator('img,script,iframe')).toHaveCount(0);
+  await page.locator('#stream').evaluate((node) => { node.textContent += '\n '; });
+  await expect(summary).toHaveAttribute('aria-selected', 'true');
+  await summary.press('Home');
+  await expect(trend).toBeFocused();
+  await expect(rows.nth(1).getByRole('cell').first()).toHaveText('A');
+  const coordinates = page.getByRole('button', { name: '坐标明细', exact: true });
+  await coordinates.focus();
+  await coordinates.press('Enter');
+  await expect(coordinates).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('img', { name: /实验坐标/ })).toBeVisible();
+  await coordinates.press('Space');
+  await expect(coordinates).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('img', { name: /实验坐标/ })).toBeHidden();
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.locator('html').evaluate((node) => node.classList.add('dark'));
+  await summary.tap();
+  await expect(summary).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('progressbar', { name: '开发进度' })).toBeVisible();
+  await expect.poll(() => page.locator('.dsui-root').evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('p1-panels-dark-mobile.png'), fullPage: true });
+  await selectMode(/^Off/);
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  await expect(page.locator('#stream')).toBeVisible();
+});
+
+test('P1 reply budgets include nested blocks across separate code fences', async () => {
+  await selectMode(/^Off/);
+  await page.goto('https://chat.deepseek.com/a/chat/s/p1-budget');
+  const group = (id: string, count: number) => ({ id, type: 'tabs', title: id, items: Array.from({ length: count }, (_, i) => ({
+    id: `p${i}`, label: `${i}`, blocks: [{ ...infoCard, id: `${id}-${i}` }],
+  })) });
+  const sources = [payload([group('first-group', 6)]), payload([group('second-group', 4)]), payload([progress])];
+  await page.evaluate((texts) => {
+    document.querySelector('#stream')!.textContent = texts[0];
+    for (let i = 1; i < texts.length; i++) {
+      const wrapper = document.createElement('div'); wrapper.className = 'md-code-block';
+      const banner = document.createElement('div'); banner.className = 'md-code-block-banner';
+      const language = document.createElement('span'); language.textContent = 'dsui'; banner.append(language);
+      const pre = document.createElement('pre'); pre.id = `budget-extra-${i}`;
+      const code = document.createElement('span'); code.textContent = texts[i]; pre.append(code);
+      wrapper.append(banner, pre); document.querySelector('#first .ds-markdown')!.append(wrapper);
+    }
+  }, sources);
+  await selectMode(/Auto/);
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(2);
+  await expect(page.locator('#stream')).toBeHidden();
+  await expect(page.locator('#budget-extra-1')).toBeHidden();
+  await expect(page.locator('#budget-extra-2')).toBeVisible();
+});
+
+test('P1 invalid or partial nested payloads retain the original source and cannot bypass reply budgets', async () => {
+  await showP1([]);
+  const invalid = [
+    { ...tabs, items: [{ ...tabs.items[0], blocks: [accordion] }] },
+    { ...tabs, items: [{ ...tabs.items[0], blocks: [infoCard, infoCard] }] },
+    { ...progress, value: 101 }, { ...pieChart, items: [{ label: '负值', value: -1 }] },
+    { ...infoCard, html: '<script>alert(1)</script>' },
+    { ...tabs, items: Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, label: `${i}`, blocks: [
+      { ...infoCard, id: `info-${i}` }, { ...progress, id: `progress-${i}` },
+    ] })) },
+  ];
+  for (const source of invalid) {
+    await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload([source]));
+    await expect(page.locator('#stream')).toBeVisible();
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  }
+  const complete = payload([tabs]);
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, complete.slice(0, -2));
+  await expect(page.locator('#stream')).toBeVisible();
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, complete);
+  await expect(page.getByRole('tab', { name: '趋势', exact: true })).toBeVisible();
+});
+
+test('P1 nested function plots retain slider state and resize after their tab is reopened', async () => {
+  await showP1([{ ...tabs, items: [{ ...tabs.items[0], blocks: [quadratic] }, { ...tabs.items[1], blocks: [infoCard] }] }]);
+  const slider = page.getByRole('slider', { name: 'a', exact: true });
+  await expect(slider).toHaveValue('1');
+  await slider.focus();
+  await slider.press('ArrowRight');
+  await expect(slider).toHaveValue('1.1');
+  await page.getByRole('tab', { name: '摘要', exact: true }).click();
+  await expect(slider).toBeHidden();
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.getByRole('tab', { name: '趋势', exact: true }).tap();
+  await expect(slider).toHaveValue('1.1');
+  await expect.poll(() => page.locator('.plot-canvas svg').first().evaluate((svg) => svg.getBoundingClientRect().width <= svg.parentElement!.getBoundingClientRect().width + 1)).toBe(true);
+  await expect(page.locator('.plot-canvas path.line')).not.toHaveAttribute('d', /NaN|Infinity/);
+});
 
 test('loads the actual MV3 extension, renders four components, updates streams and restores Off', async ({}, testInfo) => {
   const errors: string[] = [];

@@ -66,15 +66,86 @@ const expressionPlotSchema = z.strictObject({
   { message: 'Unsupported or unsafe mathematical expression' });
 const functionPlotSchema = z.discriminatedUnion('preset', [quadraticPlotSchema, expressionPlotSchema]);
 
-export const payloadSchema = z.strictObject({
-  protocol: z.literal('dsui'), version: z.literal(1),
-  blocks: z.array(z.discriminatedUnion('type', [metricSchema, chartSchema, tableSchema, timelineSchema, functionPlotSchema])).min(1).max(3),
-}).refine((value) => new Set(value.blocks.map((block) => block.id)).size === value.blocks.length,
-  { message: 'Block IDs must be unique' });
+const chartValue = number.min(-1e12).max(1e12);
+const lineSchema = z.strictObject({
+  ...base, type: z.literal('line_chart'), unit: z.string().max(40).optional(),
+  series: z.array(z.strictObject({ key: safeKey, label: shortText })).min(1).max(6),
+  items: z.array(z.strictObject({ label: shortText, values: z.record(safeKey, chartValue.nullable()) })).max(30),
+}).superRefine((block, context) => {
+  const keys = new Set(block.series.map((series) => series.key));
+  if (keys.size !== block.series.length || block.items.some((item) =>
+    Object.keys(item.values).length !== keys.size || Object.keys(item.values).some((key) => !keys.has(key)))) {
+    context.addIssue({ code: 'custom', message: 'Line series keys must be unique and exactly match every data row' });
+  }
+});
+const pieSchema = z.strictObject({
+  ...base, type: z.literal('pie_chart'), unit: z.string().max(40).optional(),
+  variant: z.enum(['pie', 'donut']).optional(),
+  items: z.array(z.strictObject({ label: shortText, value: chartValue.min(0) })).max(30),
+});
+const scatterSchema = z.strictObject({
+  ...base, type: z.literal('scatter_chart'),
+  xLabel: shortText.optional(), yLabel: shortText.optional(),
+  xUnit: z.string().max(40).optional(), yUnit: z.string().max(40).optional(),
+  items: z.array(z.strictObject({ x: chartValue, y: chartValue, label: shortText.optional() })).max(30),
+});
+const progressSchema = z.strictObject({
+  ...base, type: z.literal('progress'), value: number.min(0).max(100),
+  label: shortText.optional(), description: text.optional(),
+});
+const infoSchema = z.strictObject({
+  ...base, type: z.literal('info_card'), description: text.min(1),
+  tone: z.enum(['neutral', 'info', 'success', 'warning']).optional(),
+});
+const comparisonSchema = z.strictObject({
+  ...base, type: z.literal('comparison'),
+  items: z.array(z.strictObject({
+    label: shortText, description: text.min(1),
+    features: z.array(shortText).max(8).optional(), highlight: z.boolean().optional(),
+  })).min(2).max(4),
+});
+const leafBlockSchema = z.discriminatedUnion('type', [metricSchema, chartSchema, tableSchema, timelineSchema,
+  functionPlotSchema, lineSchema, pieSchema, scatterSchema, progressSchema, infoSchema, comparisonSchema]);
+const panelItems = z.array(z.strictObject({
+  id: base.id, label: shortText, blocks: z.array(leafBlockSchema).min(1).max(3),
+})).min(1).max(6).refine((items) => new Set(items.map((item) => item.id)).size === items.length,
+  { message: 'Panel item IDs must be unique within their container' });
+const tabsSchema = z.strictObject({
+  ...base, type: z.literal('tabs'), items: panelItems, defaultTab: base.id.optional(),
+}).refine((block) => block.defaultTab === undefined || block.items.some((item) => item.id === block.defaultTab),
+  { message: 'Default tab must name an existing item' });
+const accordionSchema = z.strictObject({
+  ...base, type: z.literal('accordion'), items: panelItems, defaultOpen: z.array(base.id).max(6).optional(),
+}).refine((block) => block.defaultOpen === undefined || (new Set(block.defaultOpen).size === block.defaultOpen.length
+  && block.defaultOpen.every((id) => block.items.some((item) => item.id === id))),
+{ message: 'Initially open accordion items must exist and be unique' });
 
-export type Payload = z.infer<typeof payloadSchema>;
+const payloadBaseSchema = z.strictObject({
+  protocol: z.literal('dsui'), version: z.literal(1),
+  blocks: z.array(z.discriminatedUnion('type', [leafBlockSchema, tabsSchema, accordionSchema])).min(1).max(3),
+});
+
+export type Payload = z.infer<typeof payloadBaseSchema>;
 export type Block = Payload['blocks'][number];
+export type LeafBlock = z.infer<typeof leafBlockSchema>;
+export type ContainerBlock = Extract<Block, { type: 'tabs' | 'accordion' }>;
 export type FunctionPlotBlock = Extract<Block, { type: 'function_plot' }>;
+
+/** Count all declared content, including unvisited panels, without recursive layouts. */
+export function payloadBlocks(payload: Payload): Block[] {
+  return payload.blocks.flatMap((block) => block.type === 'tabs' || block.type === 'accordion'
+    ? [block, ...block.items.flatMap((item) => item.blocks)] : [block]);
+}
+
+export const payloadSchema = payloadBaseSchema.superRefine((value, context) => {
+  const all = payloadBlocks(value);
+  if (new Set(all.map((block) => block.id)).size !== all.length) {
+    context.addIssue({ code: 'custom', message: 'Block IDs must be globally unique' });
+  }
+  if (all.length > 12 || all.filter((block) => block.type === 'function_plot').length > 3) {
+    context.addIssue({ code: 'custom', message: 'Reply allows at most 12 total blocks and 3 function plots' });
+  }
+});
 
 /** No evaluation, HTML parsing or network access. Incomplete streams remain untouched. */
 export function parsePayload(source: string): Payload | null {

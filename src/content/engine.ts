@@ -1,4 +1,4 @@
-import { parsePayload } from '../protocol';
+import { parsePayload, payloadBlocks } from '../protocol';
 import type { Mode } from '../prompt';
 import { findMessages, findSources } from './adapter';
 import { mountPayload, type MountedView, type Theme } from './mount';
@@ -34,12 +34,20 @@ export function startEngine(doc: Document, initialMode: Mode) {
     const theme = pageTheme(doc);
     for (const message of findMessages(doc)) {
       let count = 0;
+      let totalCount = 0;
+      let plots = 0;
       const ids = new Set<string>();
       for (const source of findSources(message)) {
         const payload = parsePayload(source.text);
-        if (!payload || count + payload.blocks.length > 3 || payload.blocks.some((block) => ids.has(block.id))) continue;
+        if (!payload) continue;
+        const blocks = payloadBlocks(payload);
+        const nextPlots = blocks.filter((block) => block.type === 'function_plot').length;
+        if (count + payload.blocks.length > 3 || totalCount + blocks.length > 12 || plots + nextPlots > 3
+          || blocks.some((block) => ids.has(block.id))) continue;
         count += payload.blocks.length;
-        payload.blocks.forEach((block) => ids.add(block.id));
+        totalCount += blocks.length;
+        plots += nextPlots;
+        blocks.forEach((block) => ids.add(block.id));
         if (failed.get(source.element) === source.text) continue;
         active.add(source.element);
         const current = mounted.get(source.element);

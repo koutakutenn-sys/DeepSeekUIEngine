@@ -2,14 +2,10 @@ import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Block } from '../protocol';
 import { FunctionPlot } from './FunctionPlot';
-
-const formatNumber = new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 15 });
-function display(value: string | number | boolean | null | undefined): string {
-  if (value === null || value === undefined) return '—';
-  if (typeof value === 'number') return formatNumber.format(value);
-  if (typeof value === 'boolean') return value ? '是' : '否';
-  return value;
-}
+import { display } from './display';
+import { DataChart } from './Charts';
+import { CardContent } from './Cards';
+import { Panels } from './Panels';
 
 function DataTable({ block }: { block: Extract<Block, { type: 'data_table' }> }) {
   const [sort, setSort] = useState<{ key: string; direction: 1 | -1 } | null>(null);
@@ -61,9 +57,13 @@ function Chart({ block }: { block: Extract<Block, { type: 'bar_chart' }> }) {
   </>;
 }
 
-export function BlockView({ block }: { block: Block }) {
+export function BlockView({ block, nested = false }: { block: Block; nested?: boolean }) {
+  const Heading = nested ? 'h4' : 'h3';
   return <section className="block" aria-label={block.title}>
-    <h3 className="block-title">{block.title}</h3>
+    <Heading className="block-title">{block.title}</Heading>
+    {(block.type === 'tabs' || block.type === 'accordion') && <Panels block={block} renderLeaf={(leaf) => <BlockView block={leaf} nested />} />}
+    {(block.type === 'line_chart' || block.type === 'pie_chart' || block.type === 'scatter_chart') && <DataChart block={block} />}
+    {(block.type === 'progress' || block.type === 'info_card' || block.type === 'comparison') && <CardContent block={block} nested={nested} />}
     {block.type === 'function_plot' && <FunctionPlot block={block} />}
     {block.type === 'metric_grid' && <div className="metric-grid">{block.items.map((item, index) => <div key={index} className="metric">
       <div className="metric-label">{item.label}</div>
