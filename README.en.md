@@ -62,6 +62,25 @@ See the [P1 validation record](docs/P1_VALIDATION.md) for scope, test results, a
 
 Enable UI in a new conversation and ask: “Use `tabs` to group a `line_chart` and a summary of these data.” Containers accept only one level of non-container blocks. Visited panels retain table sorting and function-plot parameters. Arbitrary HTML, automatic actions, and cross-component state bindings are not supported. See the [protocol](docs/protocol.md) for exact shapes, examples, and limits.
 
+## Open-source reuse and project implementation
+
+The current source uses the following main runtime libraries. See `package-lock.json` and the distribution notices for the installed versions.
+
+| Open-source project | Use in this project |
+| --- | --- |
+| [React / React DOM](https://react.dev/) | Rendering, state, and lifecycle for the popup and components inside Shadow DOM |
+| [Recharts](https://github.com/recharts/recharts) | SVG charts, axes, and tooltips for bar charts and P1 line, pie/donut, and scatter charts |
+| [function-plot](https://github.com/mauriciopoppe/function-plot) | Interval sampling, SVG plotting, axes, panning, and zooming for elementary functions |
+| [D3 Scale](https://github.com/d3/d3-scale) (`d3-scale`) | Numeric scales; P1 adds endpoint-tick handling for tiny numeric ranges using this existing transitive dependency |
+| [Math.js](https://github.com/josdejong/mathjs) | Parsing mathematical expression syntax trees, checked and evaluated by this project's allowlist and restricted adapter |
+| [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | Interval operations for mathematical expressions used by function-plot's interval sampling |
+| [decimal.js](https://github.com/MikeMcl/decimal.js) | Decimal slider stepping and snapping calculations |
+| [Zod](https://github.com/colinhacks/zod) | Strict validation of declarative DSUI data and JSON Schema export |
+
+This project implements the DSUI protocol, safety boundaries, official-page adapter, original-source fallback, theme styles, cards, tabs, accordions, and control adapters. Progress indicators use the browser's native `progress` element. Tabs and accordions use React buttons and ARIA relationships; Radix UI and shadcn/ui are not currently integrated. See the preceding section for the release status of P1 features.
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for copyright and license information. The generated `dist/THIRD_PARTY_NOTICES.txt` preserves license texts and relevant attributions for production dependencies and their transitive dependencies.
+
 ## Development and verification
 
 ```powershell

@@ -62,6 +62,25 @@ npm run build
 
 可在新對話啟用 UI 後要求：「用 `tabs` 分組展示這些數據的 `line_chart` 和摘要」。容器只接受一層非容器元件；已開啟過的面板會保留表格排序和函數圖像參數。不提供任意 HTML、自動動作或跨元件狀態綁定。格式、範例及完整限制見[協定說明](docs/protocol.md)。
 
+## 開源重用與本專案實作
+
+目前原始碼重用以下主要執行階段程式庫；實際安裝版本以 `package-lock.json` 及建置產物內的第三方聲明為準：
+
+| 開源專案 | 在本專案中的用途 |
+| --- | --- |
+| [React / React DOM](https://react.dev/) | 擴充功能彈出視窗及 Shadow DOM 內元件的呈現、狀態與生命週期 |
+| [Recharts](https://github.com/recharts/recharts) | 棒形圖，以及 P1 折線圖、圓形圖／環形圖、散點圖的 SVG、座標軸與提示框 |
+| [function-plot](https://github.com/mauriciopoppe/function-plot) | 初等函數的區間取樣、SVG 繪圖、座標軸、平移與縮放 |
+| [D3 Scale](https://github.com/d3/d3-scale)（`d3-scale`） | 數值比例尺；P1 為極小數值範圍加入端點刻度配接，重用既有間接依賴 |
+| [Math.js](https://github.com/josdejong/mathjs) | 解析數學運算式的語法樹；由本專案的白名單及受限配接層檢查與計算 |
+| [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 數學運算式的區間運算，供函數圖像的區間取樣使用 |
+| [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑桿數值的十進制步進及對齊計算 |
+| [Zod](https://github.com/colinhacks/zod) | DSUI 宣告式資料的嚴格結構驗證及 JSON Schema 匯出 |
+
+DSUI 協定、安全邊界、官方頁面配接、原文還原、主題樣式，以及卡片、分頁、摺疊面板與控制項配接程式碼由本專案實作。進度列使用瀏覽器原生 `progress` 元素；分頁及摺疊面板使用 React 按鈕與 ARIA 關係，目前未整合 Radix UI 或 shadcn/ui。P1 新功能的發佈狀態見上一節。
+
+版權及授權入口見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)；建置產生的 `dist/THIRD_PARTY_NOTICES.txt` 保留正式環境依賴及其間接依賴的授權文字與相關歸屬聲明。
+
 ## 開發與驗證
 
 ```powershell

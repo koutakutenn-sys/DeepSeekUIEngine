@@ -62,6 +62,25 @@ npm run build
 
 可以在新会话启用 UI 后要求：“用 `tabs` 分组展示这些数据的 `line_chart` 和摘要”。容器仅接受一层非容器组件，打开过的面板保留表格排序和函数图参数；不提供任意 HTML、自动动作或跨组件状态绑定。格式、示例及完整边界见[协议说明](docs/protocol.md)。
 
+## 开源复用与本项目实现
+
+当前源码复用以下主要运行库，具体安装版本以 `package-lock.json` 和构建产物中的第三方声明为准：
+
+| 开源项目 | 在本项目中的用途 |
+| --- | --- |
+| [React / React DOM](https://react.dev/) | 扩展弹窗及 Shadow DOM 内的组件渲染、状态和生命周期 |
+| [Recharts](https://github.com/recharts/recharts) | 柱状图，以及 P1 折线图、饼图/环形图、散点图的 SVG、坐标轴和提示框 |
+| [function-plot](https://github.com/mauriciopoppe/function-plot) | 初等函数的区间采样、SVG 绘图、坐标轴和平移缩放 |
+| [D3 Scale](https://github.com/d3/d3-scale)（`d3-scale`） | 数值比例尺；P1 对极小数值范围增加端点刻度适配，复用已有传递依赖 |
+| [Math.js](https://github.com/josdejong/mathjs) | 解析数学表达式的语法树；由本项目的白名单和受限适配层检查、计算 |
+| [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 数学表达式的区间运算，供函数图的区间采样使用 |
+| [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑块数值的十进制步进与吸附计算 |
+| [Zod](https://github.com/colinhacks/zod) | DSUI 声明式数据的严格结构校验及 JSON Schema 导出 |
+
+DSUI 协议、安全边界、官方页面适配、原文回退、主题样式，以及卡片、标签页、折叠面板和控件适配代码由本项目实现。进度条使用浏览器原生 `progress` 元素；标签页和折叠面板使用 React 按钮与 ARIA 关系，当前未接入 Radix UI 或 shadcn/ui。P1 新能力的发布状态见上节。
+
+版权及许可证入口见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)；构建生成的 `dist/THIRD_PARTY_NOTICES.txt` 保留生产依赖及传递依赖的许可证文本和相关归属声明。
+
 ## 开发与验证
 
 ```powershell
