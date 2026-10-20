@@ -71,7 +71,7 @@ v0.3 新增以下组件：
 | [React / React DOM](https://react.dev/) | 扩展弹窗及 Shadow DOM 内的组件渲染、状态和生命周期 |
 | [Recharts](https://github.com/recharts/recharts) | 柱状图，以及 P1 折线图、饼图/环形图、散点图的 SVG、坐标轴和提示框 |
 | [function-plot](https://github.com/mauriciopoppe/function-plot) | 初等函数的区间采样、SVG 绘图、坐标轴和平移缩放 |
-| [D3 Scale](https://github.com/d3/d3-scale)（`d3-scale`） | 数值比例尺；P1 对极小数值范围增加端点刻度适配，复用已有传递依赖 |
+| [D3 Scale](https://github.com/d3/d3-scale)（`d3-scale`） | 数值比例尺；P1 对极小数值范围增加端点刻度适配，现已显式声明为直接依赖 |
 | [Math.js](https://github.com/josdejong/mathjs) | 解析数学表达式的语法树；由本项目的白名单和受限适配层检查、计算 |
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 数学表达式的区间运算，供函数图的区间采样使用 |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑块数值的十进制步进与吸附计算 |
@@ -90,7 +90,7 @@ npm run build
 npm run test:e2e
 ```
 
-GitHub Actions 在推送到 `main`、针对 `main` 的 Pull Request 以及手动触发时，使用 Node.js 22 执行上述检查。CI 无需配置 Secret；E2E 失败时仅上传本地测试夹具的 PNG 截图，保留 3 天，不上传 trace、源码或浏览器 profile。
+GitHub Actions 在推送到 `main`、针对 `main` 的 Pull Request 以及手动触发时，使用 Node.js 22 执行上述检查，并查询全部生产依赖的 npm 公告，在发现中等或更高等级漏洞时失败。CI 无需配置 Secret；E2E 失败时仅上传本地测试夹具的 PNG 截图，保留 3 天，不上传 trace、源码或浏览器 profile。
 
 浏览器测试会在 `.cache/ms-playwright` 下载项目私有 Chromium，并用独立测试配置加载真实构建的扩展。夹具使用从已登录官方网页观察到的代码块结构，以及真实 React 受控输入框和页面发送控件。官方域名请求由测试拦截，不发送真实聊天；覆盖既有与 P1 组件、流式补全、模式切换、原文恢复、手动启用、草稿保护、普通消息原样发送、会话去重、新建会话分配 ID、历史标记刷新、排序、展开、深色及窄屏。函数图另覆盖滑块鼠标/触屏/键盘、平移缩放、双指手势和完成流追加空白时保留本地状态。P1 还验证多序列断点、空数据、容器键盘导航、隐藏面板恢复及跨代码块资源限制。截图输出到 `test-results`。模拟测试与登录后的真实页面检查分别记录。
 
@@ -107,6 +107,7 @@ function-plot 自动化验证覆盖 32 个初等函数案例、已知数学坐�
 - 不拦截网络请求；在官方输入框和页面 DOM 上工作。
 - 脚本和样式均随扩展打包，不加载远程代码，不执行模型提供的 HTML/JavaScript；所有文本经过 React 转义。
 - 无效、超限、未知版本或组件渲染失败时保留原始 Markdown。未完成的流式 JSON 不隐藏原文。
+- 拒绝双向/不可见格式控制字符（保留合法 ZWJ/ZWNJ 连接符）和危险控制字符，标签只接受单行文本；说明可保留换行。不会静默改写模型数据，非法内容整体回退原文。
 - DeepSeek 网页 DOM 并非公开稳定接口。官方改版可能需要调整适配器，不能以模拟页面测试代替真实兼容性检查。
 
 ## License
@@ -119,3 +120,5 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 for third-party copyright and license notices.
 
 构建会将该通知复制到 `dist/THIRD_PARTY_NOTICES.md`，并保留生产依赖许可证汇总 `dist/THIRD_PARTY_NOTICES.txt`。
+
+`interval-arithmetic@1.1.3` 的发布包许可文本与源码头存在 BSL/MIT 来源差异，适用范围尚未厘清；原有声明均保留，结构化记录见构建产物 `dist/THIRD_PARTY_COVERAGE.json` 的 `unresolved`。安全问题报告方式见 [SECURITY.md](SECURITY.md)。

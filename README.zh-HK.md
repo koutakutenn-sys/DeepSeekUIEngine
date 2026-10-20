@@ -71,7 +71,7 @@ v0.3 新增以下元件：
 | [React / React DOM](https://react.dev/) | 擴充功能彈出視窗及 Shadow DOM 內元件的呈現、狀態與生命週期 |
 | [Recharts](https://github.com/recharts/recharts) | 棒形圖，以及 P1 折線圖、圓形圖／環形圖、散點圖的 SVG、座標軸與提示框 |
 | [function-plot](https://github.com/mauriciopoppe/function-plot) | 初等函數的區間取樣、SVG 繪圖、座標軸、平移與縮放 |
-| [D3 Scale](https://github.com/d3/d3-scale)（`d3-scale`） | 數值比例尺；P1 為極小數值範圍加入端點刻度配接，重用既有間接依賴 |
+| [D3 Scale](https://github.com/d3/d3-scale)（`d3-scale`） | 數值比例尺；P1 為極小數值範圍加入端點刻度配接，現已明確宣告為直接依賴 |
 | [Math.js](https://github.com/josdejong/mathjs) | 解析數學運算式的語法樹；由本專案的白名單及受限配接層檢查與計算 |
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 數學運算式的區間運算，供函數圖像的區間取樣使用 |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑桿數值的十進制步進及對齊計算 |
@@ -90,7 +90,7 @@ npm run build
 npm run test:e2e
 ```
 
-GitHub Actions 會在推送至 `main`、以 `main` 為目標的 Pull Request，以及手動觸發時，使用 Node.js 22 執行上述檢查。CI 毋須設定 Secret；E2E 失敗時只會上傳本機測試資料頁的 PNG 螢幕擷取畫面，保留 3 天，不會上傳 trace、原始碼或瀏覽器設定檔。
+GitHub Actions 會在推送至 `main`、以 `main` 為目標的 Pull Request，以及手動觸發時，使用 Node.js 22 執行上述檢查，並查詢所有正式環境依賴的 npm 公告，發現中等或以上級別漏洞時失敗。CI 毋須設定 Secret；E2E 失敗時只會上傳本機測試資料頁的 PNG 螢幕擷取畫面，保留 3 天，不會上傳 trace、原始碼或瀏覽器設定檔。
 
 瀏覽器測試會將專案專用的 Chromium 下載至 `.cache/ms-playwright`，並以獨立測試設定載入實際建置的擴充功能。測試資料頁採用已登入官方網頁中觀察到的程式碼區塊結構，以及真正的 React 受控輸入框和頁面傳送控制項。測試會攔截官方網域的請求，不會傳送真實聊天；涵蓋既有及 P1 元件、串流補全、模式切換、還原原文、手動啟用、草稿保護、一般訊息按原文傳送、對話去重、新對話 ID 分配、歷史標記重新整理、排序、展開、深色及窄螢幕。函數圖像另外涵蓋滑桿的滑鼠、觸控及鍵盤操作，平移縮放、雙指手勢，以及串流完成後追加空白時保留本機狀態。P1 亦驗證多序列斷點、空資料、面板鍵盤操作、隱藏面板恢復及跨程式碼區塊的資源限制。螢幕擷取畫面輸出至 `test-results`。模擬測試與登入後的真實頁面檢查分開記錄。
 
@@ -107,6 +107,7 @@ function-plot 自動化驗證涵蓋 32 個初等函數案例、已知數學座�
 - 不攔截網絡請求；只在官方輸入框和頁面 DOM 上運作。
 - 指令碼及樣式均隨擴充功能打包，不會載入遠端程式碼或執行模型提供的 HTML/JavaScript；所有文字均經 React 跳脫處理。
 - 如資料無效、超出上限、版本不明，或元件呈現失敗，會保留原始 Markdown。未完成的串流 JSON 不會隱藏原文。
+- 拒絕雙向／不可見格式控制字元（保留合法 ZWJ/ZWNJ 連接符）及危險控制字元，標籤只接受單行文字；說明可保留換行。不會默默改寫模型資料，無效內容整段還原為原文。
 - DeepSeek 網頁 DOM 並非公開且穩定的介面。官方改版後可能需要調整配接器，不能以模擬頁面測試代替真實相容性檢查。
 
 ## 授權
@@ -118,5 +119,7 @@ function-plot 自動化驗證涵蓋 32 個初等函數案例、已知數學座�
 第三方版權及授權聲明見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 建置時會將該通知複製至 `dist/THIRD_PARTY_NOTICES.md`，並保留正式環境依賴的授權彙整 `dist/THIRD_PARTY_NOTICES.txt`。
+
+`interval-arithmetic@1.1.3` 發佈套件的授權文字與原始碼標頭存在 BSL/MIT 來源差異，適用範圍尚未釐清；所有既有聲明均保留，結構化記錄見建置產物 `dist/THIRD_PARTY_COVERAGE.json` 的 `unresolved`。安全問題報告方式見 [SECURITY.md](SECURITY.md)。
 
 連結中的協定及驗證記錄目前以簡體中文為主。

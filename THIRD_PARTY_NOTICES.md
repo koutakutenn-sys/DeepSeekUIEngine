@@ -38,3 +38,10 @@ SOFTWARE.
 
 The build preserves the production dependencies' license texts, nested notices,
 and retained source attributions in `THIRD_PARTY_NOTICES.txt` in the distribution.
+
+### Unresolved license provenance
+
+For `interval-arithmetic@1.1.3`, the published package's BSL-1.0 text and MIT
+source headers differ. Their scope remains unresolved; neither statement is
+removed or assumed to replace the other. The existing evidence is retained in
+the distribution notices and the `unresolved` field of `THIRD_PARTY_COVERAGE.json`.

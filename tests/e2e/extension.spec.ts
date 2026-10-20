@@ -99,6 +99,49 @@ test('security hardening: popup CSP blocks network connections before any reques
   } finally { await popup.unroute(probe); }
 });
 
+test('security hardening: activation ignores feedback and hidden submits, then refuses ambiguous send controls', async () => {
+  await selectMode(/Auto/);
+  await page.goto('https://chat.deepseek.com/a/chat/s/security-send');
+  await page.locator('form').evaluate((form) => {
+    const feedback = document.createElement('button'); feedback.type = 'submit'; feedback.textContent = 'Send feedback'; feedback.id = 'wrong-submit';
+    feedback.addEventListener('click', (event) => { event.preventDefault(); feedback.dataset.clicked = 'true'; });
+    const hidden = document.createElement('button'); hidden.type = 'submit'; hidden.setAttribute('aria-label', '发送'); hidden.hidden = true;
+    form.prepend(feedback, hidden);
+  });
+  await page.getByRole('button', { name: '启用 UI', exact: true }).click();
+  await expect(page.locator('#sent')).toContainText('<!-- DSUI:v1 -->');
+  await expect(page.locator('#wrong-submit')).not.toHaveAttribute('data-clicked');
+  await page.goto('https://chat.deepseek.com/a/chat/s/security-ambiguous');
+  await page.locator('form').evaluate((form) => {
+    const other = document.createElement('button'); other.type = 'button'; other.textContent = '发送消息'; form.prepend(other);
+  });
+  await expect(page.getByRole('button', { name: '启用 UI', exact: true })).toBeDisabled();
+  await expect(page.locator('textarea')).toHaveValue('');
+  await expect(page.locator('#sent')).toBeEmpty();
+});
+
+test('security hardening: Unicode controls preserve raw source while valid RTL and prototype-named cells remain usable', async () => {
+  const unsafe = payload([{ ...infoCard, title: '说明\u202e123' }]);
+  await showP1([]);
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, unsafe);
+  await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+  await expect(page.locator('#stream')).toBeVisible();
+  expect(await page.locator('#stream').textContent()).toBe(unsafe);
+  await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload([
+    { ...infoCard, title: '👩‍💻 العربية', description: '第一行\n第二行' },
+    { id: 'prototype-browser', type: 'data_table', title: '属性名表格', columns: [{ key: 'name', label: '记录' }, { key: 'toString', label: '排序值' }],
+      rows: [{ name: '缺失' }, { name: '第二', toString: 'B' }, { name: '第一', toString: 'A' }] },
+  ]));
+  await expect(page.getByRole('heading', { name: '👩‍💻 العربية', exact: true })).toBeVisible();
+  await expect(page.getByText('内容由模型生成，请核实数据。', { exact: true })).toBeVisible();
+  const rows = page.getByRole('table', { name: '属性名表格' }).getByRole('row');
+  await expect(rows.nth(1).getByRole('cell')).toHaveText(['缺失', '—']);
+  const sort = page.getByRole('button', { name: /排序值/ });
+  await sort.click(); await sort.click();
+  await expect(rows.nth(1).getByRole('cell')).toHaveText(['第二', 'B']);
+  await expect(rows.nth(3).getByRole('cell')).toHaveText(['缺失', '—']);
+});
+
 test('P1 charts render real SVG, preserve line gaps and expose exact values without invented empty samples', async ({}, testInfo) => {
   const errors: string[] = [];
   const onError = (error: Error) => errors.push(error.message);

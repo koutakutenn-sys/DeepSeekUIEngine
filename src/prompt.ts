@@ -18,7 +18,7 @@ info_card: {id,type:"info_card",title,description,tone?}，description非空，t
 comparison: {id,type:"comparison",title,items:[{label,description,features?,highlight?}]}，2-4个方案，description非空，features为最多8个短文本，highlight为布尔值。
 tabs: {id,type:"tabs",title,defaultTab?,items:[{id,label,blocks:[...]}]}；accordion: {id,type:"accordion",title,defaultOpen?,items:[{id,label,blocks:[...]}]}。两种容器各1-6项，项id在本容器内唯一；每项1-3个非容器区块，禁止嵌套tabs/accordion。defaultTab只能为已有项id，省略选第一项；defaultOpen为不重复的已有项id数组，省略全部关闭。交互仅浏览器本地切换，不带动作或绑定。
 function_plot: {id,type:"function_plot",title,preset:"expression",expression:"a*sin(x)",parameters:[{key:"a",label:"振幅 a",value:1,min:-5,max:5,step:0.1}],viewport:{xMin:-8,xMax:8,yMin:-8,yMax:8}}。绘制实数 y=f(x)，expression最长256字符、最多64个语法节点、嵌套深度≤16。只用 x、常数 pi/e、已声明参数 a/b/c/d/p/q（最多6个，无参数时传[]），支持 + - * / ^、括号、sin/cos/tan/asin/acos/atan/sinh/cosh/tanh/exp/log/ln/log10/log2/sqrt/cbrt/abs，函数仅单参数；log/ln为自然对数，角度为弧度，负数立方根用cbrt(x)。不得传JS、赋值、对象、数组、条件表达式、样式、URL或采样点。兼容旧preset:"quadratic"（不传expression，parameters恰好a/b/c，表示a*x^2+b*x+c）。value/min/max绝对值≤10000，min≤value≤max，max-min≥0.000001，step在0.000001至20000之间；视口边界绝对值≤1000000，各轴跨度0.001至1000000；滑块由浏览器本地重绘。
-title/label/date及features的文本不超过160字符，表格文本值不超过500字符，description不超过2000字符，unit/xUnit/yUnit不超过40字符。key不得为__proto__/prototype/constructor。不添加额外字段、HTML、JS、CSS、URL、事件、网络请求或跨区块共享状态。`;
+title/label/date及features的文本不超过160字符，表格文本值不超过500字符，description不超过2000字符，unit/xUnit/yUnit不超过40字符。标题/标签/单位等短文本必须单行，说明和表格文本可换行；不得含双向、不可见格式或危险控制字符，正常emoji和拼写用的ZWJ/ZWNJ连接符除外。key不得为__proto__/prototype/constructor。不添加额外字段、HTML、JS、CSS、URL、事件、网络请求或跨区块共享状态。`;
 
 function suffix(mode: Exclude<Mode, 'off'>): string {
   return `\n\n<!-- DSUI:v1 -->\n${mode === 'auto' ? '仅在适合可视化时附加UI；普通聊天只用文字。' : '优先使用合适的富UI，无法可靠表达时回退文字。'}\n${guide}\n<!-- /DSUI -->`;

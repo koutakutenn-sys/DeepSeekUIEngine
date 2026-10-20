@@ -71,7 +71,7 @@ The current source uses the following main runtime libraries. See `package-lock.
 | [React / React DOM](https://react.dev/) | Rendering, state, and lifecycle for the popup and components inside Shadow DOM |
 | [Recharts](https://github.com/recharts/recharts) | SVG charts, axes, and tooltips for bar charts and P1 line, pie/donut, and scatter charts |
 | [function-plot](https://github.com/mauriciopoppe/function-plot) | Interval sampling, SVG plotting, axes, panning, and zooming for elementary functions |
-| [D3 Scale](https://github.com/d3/d3-scale) (`d3-scale`) | Numeric scales; P1 adds endpoint-tick handling for tiny numeric ranges using this existing transitive dependency |
+| [D3 Scale](https://github.com/d3/d3-scale) (`d3-scale`) | Numeric scales; P1 adds endpoint-tick handling for tiny numeric ranges, now with an explicit direct dependency declaration |
 | [Math.js](https://github.com/josdejong/mathjs) | Parsing mathematical expression syntax trees, checked and evaluated by this project's allowlist and restricted adapter |
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | Interval operations for mathematical expressions used by function-plot's interval sampling |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | Decimal slider stepping and snapping calculations |
@@ -90,7 +90,7 @@ npm run build
 npm run test:e2e
 ```
 
-GitHub Actions runs these checks on Node.js 22 for pushes to `main`, pull requests targeting `main`, and manual runs. CI requires no secrets. On E2E failure, it uploads only PNG screenshots from local test fixtures, retained for three days; it does not upload traces, source code, or browser profiles.
+GitHub Actions runs these checks on Node.js 22 for pushes to `main`, pull requests targeting `main`, and manual runs. It also queries npm advisories for all production dependencies and fails on moderate or higher vulnerabilities. CI requires no secrets. On E2E failure, it uploads only PNG screenshots from local test fixtures, retained for three days; it does not upload traces, source code, or browser profiles.
 
 Browser tests download a project-private Chromium into `.cache/ms-playwright` and load the actual extension build with an isolated test configuration. The fixtures use code-block structures observed on the signed-in official site, real React controlled inputs, and page send controls. Tests intercept requests to the official domain and send no real chat messages. Coverage includes the existing and P1 components, streaming completion, mode switching, restoring original text, manual enablement, draft protection, unchanged ordinary messages, conversation deduplication, new conversation IDs, history-marker refresh, sorting, expansion, dark mode, and narrow screens. Function-plot checks also cover mouse, touch, and keyboard slider input, panning and zooming, pinch gestures, and preserving local state when trailing whitespace arrives after streaming completion. P1 additionally checks multi-series gaps, empty data, keyboard panel navigation, restored hidden panels, and reply budgets across code fences. Screenshots are written to `test-results`. Fixture tests and signed-in checks on the real website are recorded separately.
 
@@ -107,6 +107,7 @@ Code entry points: `src/protocol.ts` (validation), `src/prompt.ts` (protocol ins
 - Does not intercept network requests; it operates through the official input and page DOM.
 - Scripts and styles are bundled locally. The extension loads no remote code and executes no model-provided HTML or JavaScript. React escapes all text.
 - Invalid, oversized, unknown-version, or failed components keep the original Markdown. Incomplete streaming JSON never hides the original content.
+- Bidirectional/invisible formatting controls (except legitimate ZWJ/ZWNJ joiners) and unsafe control characters are rejected. Labels must be single-line; descriptions may retain line breaks. Invalid data falls back to the original source without silent rewriting.
 - The DeepSeek page DOM is not a public, stable interface. Site updates may require adapter changes; fixture tests cannot replace real-site compatibility checks.
 
 ## License
@@ -118,5 +119,7 @@ This project is licensed under the [MIT License](LICENSE).
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party copyright and license notices.
 
 The build copies that notice to `dist/THIRD_PARTY_NOTICES.md` and retains the production-dependency license collection in `dist/THIRD_PARTY_NOTICES.txt`.
+
+The published license text and source headers of `interval-arithmetic@1.1.3` carry differing BSL/MIT statements whose scope remains unresolved. Existing notices are preserved; see `unresolved` in the generated `dist/THIRD_PARTY_COVERAGE.json`. See [SECURITY.md](SECURITY.md) for security reporting guidance.
 
 Linked protocol and validation documents are currently primarily in Simplified Chinese.
