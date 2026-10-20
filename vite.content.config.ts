@@ -2,9 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { plotAliases } from './plot-aliases';
 import { licenseModules } from './scripts/license-modules';
+import { zodNoCodegen } from './scripts/zod-no-codegen';
 
 export default defineConfig({
-  plugins: [react(), licenseModules('content')],
+  plugins: [zodNoCodegen(), react(), licenseModules('content')],
   resolve: { alias: plotAliases },
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   publicDir: 'public',

@@ -2,12 +2,19 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { BlockView } from '../src/components/BlockView';
 import { display } from '../src/components/display';
+import { PayloadView } from '../src/components/PayloadView';
 import { findComposer, findSendButton, isSendAction } from '../src/content/adapter';
 import { sendActivationPrompt } from '../src/content/composer';
 import { parsePayload } from '../src/protocol';
 import { payload } from './fixtures';
+import { infoCard } from './p1-fixtures';
 
 describe('security audit interaction regressions', () => {
+  it('identifies enhanced data as model-generated content that needs verification', () => {
+    const source = payload([infoCard]);
+    render(<PayloadView payload={parsePayload(source)!} source={source} onFailure={() => { throw Error('Unexpected render failure'); }} />);
+    expect(screen.getByText('内容由模型生成，请核实数据。')).toBeTruthy();
+  });
   it.each(['toString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf', 'toLocaleString'])('treats a missing %s cell as missing while retaining owned values and stable sorting', (key) => {
     const data = { id: 'prototype-table', type: 'data_table', title: '属性名表格', columns: [
       { key: 'name', label: '记录' }, { key, label: '排序值' },

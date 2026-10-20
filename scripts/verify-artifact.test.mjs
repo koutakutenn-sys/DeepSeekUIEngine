@@ -1,0 +1,31 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { verifyScript } from './verify-artifact.mjs';
+
+for (const source of [
+  'eval("x")', 'new Function("return 1")', 'const F = Function; new F("return 1")', 'window.eval("x")', 'globalThis["eval"]("x")',
+  '(0, eval)("x")', 'eval.call(null,"x")', 'const execute = globalThis.Function; execute("return 1")()',
+  'const execute = window["ev"+"al"]; execute("x")',
+  'const root = globalThis; root.eval("x")', 'const root = window; const next = root; next["ev"+"al"]("x")',
+  '(function () {}).constructor("return 1")', 'setTimeout("alert(1)", 0)',
+  'fetch("https://example.invalid")', 'globalThis["fetch"]("https://example.invalid")',
+  'new XMLHttpRequest()', 'new WebSocket("wss://example.invalid")', 'new EventSource("https://example.invalid")',
+  'navigator.sendBeacon("https://example.invalid", "data")', 'document.cookie', 'Function.prototype.constructor("return 1")',
+]) {
+  for (const standalone of [true, false]) test(`rejects unsafe ${standalone ? 'content' : 'popup'} code: ${source}`, () => {
+    assert.throws(() => verifyScript(source, { name: standalone ? 'content.js' : 'assets/popup.js', standalone }));
+  });
+}
+test('allows inert strings, local UI code and local popup module imports', () => {
+  verifyScript('const label = "eval fetch Function cookie"; document.body.textContent = label; Math.sin(1);', { name: 'content.js', standalone: true });
+  verifyScript('import { value } from "./local.js"; console.log(value);', { name: 'popup.js', standalone: false });
+  verifyScript('const callback = {eval: (x) => x}; callback.eval(1); Function.prototype.call.call(Math.sin, null, 1);', { name: 'content.js', standalone: true });
+  verifyScript('function run(root) { return root.eval(1); } run({eval: (value) => value}); setTimeout(() => run({eval: (value) => value}), 0);', { name: 'content.js', standalone: true });
+});
+test('rejects external popup modules and dynamic imports', () => {
+  assert.throws(() => verifyScript('import "https://example.invalid/script.js";', { name: 'popup.js', standalone: false }));
+  assert.throws(() => verifyScript('import("./local.js")', { name: 'popup.js', standalone: false }));
+});
+test('retains the content-script standalone restriction', () => {
+  assert.throws(() => verifyScript('import "./local.js";', { name: 'content.js', standalone: true }));
+});

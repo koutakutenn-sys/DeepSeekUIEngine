@@ -14,6 +14,7 @@ export function PayloadView({ payload, source, onFailure }: { payload: Payload; 
     <div className="dsui-root">
       <div className="view-label"><span aria-hidden="true" className="view-dot" />数据视图<span className="view-brand">DSUI</span></div>
       <div className="flex flex-col gap-4">{payload.blocks.map((block) => <BlockView key={block.id} block={block} />)}</div>
+      <p className="data-notice">内容由模型生成，请核实数据。</p>
       <details className="source-disclosure"><summary>查看原始 DSUI</summary><pre>{source}</pre></details>
     </div>
   </RenderBoundary>;

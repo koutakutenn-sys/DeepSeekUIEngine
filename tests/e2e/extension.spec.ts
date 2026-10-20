@@ -67,7 +67,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => { await context?.close(); });
 test.afterEach(async ({}, testInfo) => {
-  if (testInfo.title.startsWith('P1')) {
+  if (testInfo.title.startsWith('P1') || testInfo.title.startsWith('security hardening')) {
     await selectMode(/Auto/);
     await page.setViewportSize({ width: 1024, height: 1000 });
     await page.goto('https://chat.deepseek.com/');
@@ -79,6 +79,25 @@ async function showP1(blocks: unknown[]) {
   await page.goto('https://chat.deepseek.com/a/chat/s/p1-fixture');
   await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload(blocks));
 }
+
+test('security hardening: popup version follows the installed extension manifest', async () => {
+  const manifest = JSON.parse(await readFile('public/manifest.json', 'utf8'));
+  await expect(popup.locator('.version')).toHaveText(`v${manifest.version}`);
+});
+
+test('security hardening: popup CSP blocks network connections before any request leaves', async () => {
+  const probe = 'https://chat.deepseek.com/__dsui_local_security_probe';
+  const requests: string[] = [];
+  // Even the negative control is fulfilled locally; no request reaches the official site.
+  await popup.route(probe, async (route) => { requests.push(route.request().url()); await route.fulfill({ body: 'local fixture', headers: { 'access-control-allow-origin': '*' } }); });
+  try {
+    const result = await popup.evaluate(async (url) => {
+      try { await fetch(url); return 'allowed'; } catch { return 'blocked'; }
+    }, probe);
+    expect(result).toBe('blocked');
+    expect(requests).toEqual([]);
+  } finally { await popup.unroute(probe); }
+});
 
 test('P1 charts render real SVG, preserve line gaps and expose exact values without invented empty samples', async ({}, testInfo) => {
   const errors: string[] = [];

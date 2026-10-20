@@ -13,7 +13,7 @@ for (const args of [
   ['scripts/export-schema.mjs'],
   ['scripts/export-licenses.mjs'],
   ['scripts/verify-build.mjs'],
-  ['--test', 'scripts/license-audit.test.mjs'],
+  ['--test', 'scripts/license-audit.test.mjs', 'scripts/verify-artifact.test.mjs', 'scripts/zod-no-codegen.test.mjs'],
 ]) {
   // Vite recreates dist, so preserve the notice after bundling and before verification.
   if (args[0] === 'scripts/verify-build.mjs') {

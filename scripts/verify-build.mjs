@@ -1,7 +1,7 @@
 import { readFile, access, readdir } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
-import ts from 'typescript';
+import { verifyScript } from './verify-artifact.mjs';
 import { collectLicenseAudit, verifyLicenseNotices } from './license-audit.mjs';
 
 const output = resolve('dist');
@@ -13,6 +13,8 @@ assert.equal(manifest.content_scripts[0].world, 'ISOLATED');
 assert.equal(manifest.background, undefined);
 assert.equal(manifest.host_permissions, undefined);
 assert.equal(manifest.web_accessible_resources, undefined);
+const csp = manifest.content_security_policy.extension_pages;
+assert(/(?:^|;)\s*connect-src\s+'none'\s*(?:;|$)/.test(csp), 'Extension pages must block network connections');
 for (const file of [...manifest.content_scripts[0].js, manifest.action.default_popup]) await access(join(output, file));
 const notices = await readFile(join(output, 'THIRD_PARTY_NOTICES.txt'), 'utf8');
 const licenseAudit = await collectLicenseAudit(output);
@@ -26,18 +28,14 @@ const schema = JSON.parse(await readFile(join(output, 'dsui.schema.json'), 'utf8
 assert.equal(schema.properties.blocks.maxItems, 3);
 const content = await readFile(join(output, 'content.js'), 'utf8');
 assert(content.length > 1000, 'Content bundle must contain the actual engine');
-const syntax = ts.createSourceFile('content.js', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-function checkSyntax(node) {
-  assert(!ts.isImportDeclaration(node) && !ts.isExportDeclaration(node), 'Content script must be a standalone bundle');
-  if (ts.isPropertyAccessExpression(node)) assert(node.getText(syntax) !== 'process.env.NODE_ENV', 'Browser bundle must resolve NODE_ENV during build');
-  if (ts.isCallExpression(node)) {
-    assert(node.expression.kind !== ts.SyntaxKind.ImportKeyword, 'No dynamic imports in the content script');
-    assert(!(ts.isIdentifier(node.expression) && node.expression.text === 'eval'), 'No eval in the bundle');
+async function checkScripts(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) await checkScripts(path);
+    else if (entry.isFile() && entry.name.endsWith('.js')) verifyScript(await readFile(path, 'utf8'), { name: path, standalone: path === join(output, 'content.js') });
   }
-  if (ts.isNewExpression(node)) assert(!(ts.isIdentifier(node.expression) && node.expression.text === 'Function'), 'No Function constructor in the bundle');
-  ts.forEachChild(node, checkSyntax);
 }
-checkSyntax(syntax);
+await checkScripts(output);
 const popup = await readFile(join(output, 'popup.html'), 'utf8');
 assert(!/<script[^>]+src=["']https?:/.test(popup), 'Popup scripts must be bundled locally');
 for (const match of popup.matchAll(/(?:src|href)="(\.\/[^\"]+)"/g)) await access(join(output, match[1]));

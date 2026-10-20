@@ -1,10 +1,17 @@
 import { z } from 'zod';
 import { validateExpression } from './math/plot-expression.ts';
 
-const shortText = z.string().min(1).max(160);
-const text = z.string().max(2000);
+z.config({ jitless: true });
+
+// Keep legitimate emoji/Persian joiners; reject other hidden format controls and unsafe C0/C1 controls.
+const unsafeText = /(?:(?![\u200c\u200d])\p{Cf})|[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u;
+const lineBreak = /[\r\n\t\u2028\u2029]/u;
+const boundedText = (max: number, multiline = false) => z.string().max(max)
+  .refine((value) => !unsafeText.test(value) && (multiline || !lineBreak.test(value)), { message: 'Unsafe text controls or multiline label' });
+const shortText = boundedText(160).min(1);
+const text = boundedText(2000, true);
 const number = z.number().finite();
-const cell = z.union([z.string().max(500), number, z.boolean(), z.null()]);
+const cell = z.union([boundedText(500, true), number, z.boolean(), z.null()]);
 const safeKey = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,39}$/)
   .refine((key) => !['__proto__', 'prototype', 'constructor'].includes(key));
 const base = { id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), title: shortText };
@@ -12,12 +19,12 @@ const base = { id: z.string().regex(/^[a-zA-Z0-9_-]{1,64}$/), title: shortText }
 const metricSchema = z.strictObject({
   ...base, type: z.literal('metric_grid'),
   items: z.array(z.strictObject({
-    label: shortText, value: z.union([z.string().max(160), number]),
-    unit: z.string().max(40).optional(), change: z.string().max(80).optional(),
+    label: shortText, value: z.union([boundedText(160), number]),
+    unit: boundedText(40).optional(), change: boundedText(80).optional(),
   })).min(1).max(12),
 });
 const chartSchema = z.strictObject({
-  ...base, type: z.literal('bar_chart'), unit: z.string().max(40).optional(),
+  ...base, type: z.literal('bar_chart'), unit: boundedText(40).optional(),
   items: z.array(z.strictObject({ label: shortText, value: number })).min(1).max(30),
 });
 const tableSchema = z.strictObject({
@@ -58,7 +65,7 @@ const quadraticPlotSchema = z.strictObject({
 });
 const expressionPlotSchema = z.strictObject({
   ...base, type: z.literal('function_plot'), preset: z.literal('expression'),
-  expression: z.string().min(1).max(256),
+  expression: boundedText(256).min(1),
   parameters: z.array(plotParameter).max(6).refine((p) => new Set(p.map((entry) => entry.key)).size === p.length,
     { message: 'Parameters must be unique' }),
   viewport: viewportSchema,
@@ -68,7 +75,7 @@ const functionPlotSchema = z.discriminatedUnion('preset', [quadraticPlotSchema, 
 
 const chartValue = number.min(-1e12).max(1e12);
 const lineSchema = z.strictObject({
-  ...base, type: z.literal('line_chart'), unit: z.string().max(40).optional(),
+  ...base, type: z.literal('line_chart'), unit: boundedText(40).optional(),
   series: z.array(z.strictObject({ key: safeKey, label: shortText })).min(1).max(6),
   items: z.array(z.strictObject({ label: shortText, values: z.record(safeKey, chartValue.nullable()) })).max(30),
 }).superRefine((block, context) => {
@@ -79,14 +86,14 @@ const lineSchema = z.strictObject({
   }
 });
 const pieSchema = z.strictObject({
-  ...base, type: z.literal('pie_chart'), unit: z.string().max(40).optional(),
+  ...base, type: z.literal('pie_chart'), unit: boundedText(40).optional(),
   variant: z.enum(['pie', 'donut']).optional(),
   items: z.array(z.strictObject({ label: shortText, value: chartValue.min(0) })).max(30),
 });
 const scatterSchema = z.strictObject({
   ...base, type: z.literal('scatter_chart'),
   xLabel: shortText.optional(), yLabel: shortText.optional(),
-  xUnit: z.string().max(40).optional(), yUnit: z.string().max(40).optional(),
+  xUnit: boundedText(40).optional(), yUnit: boundedText(40).optional(),
   items: z.array(z.strictObject({ x: chartValue, y: chartValue, label: shortText.optional() })).max(30),
 });
 const progressSchema = z.strictObject({
