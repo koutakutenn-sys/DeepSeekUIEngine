@@ -7,12 +7,14 @@ import { DataChart } from './Charts';
 import { CardContent } from './Cards';
 import { Panels } from './Panels';
 
+const cellValue = (row: Extract<Block, { type: 'data_table' }>['rows'][number], key: string) => Object.hasOwn(row, key) ? row[key] : null;
+
 function DataTable({ block }: { block: Extract<Block, { type: 'data_table' }> }) {
   const [sort, setSort] = useState<{ key: string; direction: 1 | -1 } | null>(null);
   const rows = block.rows.map((row, index) => ({ row, index }));
   if (sort) rows.sort((a, b) => {
-    const left = a.row[sort.key];
-    const right = b.row[sort.key];
+    const left = cellValue(a.row, sort.key);
+    const right = cellValue(b.row, sort.key);
     if (left == null && right == null) return a.index - b.index;
     if (left == null) return 1;
     if (right == null) return -1;
@@ -29,7 +31,7 @@ function DataTable({ block }: { block: Extract<Block, { type: 'data_table' }> })
           {column.label}<span aria-hidden="true">{sort?.key === column.key ? (sort.direction === 1 ? '↑' : '↓') : '↕'}</span>
         </button>
       </th>)}</tr></thead>
-      <tbody>{rows.map(({ row, index }) => <tr key={index}>{block.columns.map((column) => <td key={column.key}>{display(row[column.key])}</td>)}</tr>)}</tbody>
+      <tbody>{rows.map(({ row, index }) => <tr key={index}>{block.columns.map((column) => <td key={column.key}>{display(cellValue(row, column.key))}</td>)}</tr>)}</tbody>
     </table>
     {rows.length === 0 && <p className="empty-state">暂无数据</p>}
   </div>;

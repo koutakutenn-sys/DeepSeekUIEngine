@@ -45,10 +45,21 @@ export function findComposer(doc: Document): Composer | null {
 }
 
 export function findSendButton(composer: Composer): HTMLElement | null {
-  // Restrict fallback submit buttons to the composer's own form/container.
   const scope = composer.closest('form') ?? composer.parentElement?.parentElement;
   if (!scope) return null;
-  return scope.querySelector<HTMLElement>('[data-testid="send-button"], button[aria-label="发送"], button[aria-label="发送消息"], button[aria-label="Send"], button[aria-label="Send message"], [role="button"][aria-label="发送"], [role="button"][aria-label="Send message"], .ds-icon-button[aria-label="发送消息"], button[type="submit"], [role="button"].ds-button--primary.ds-button--circle');
+  const candidates = [...scope.querySelectorAll<HTMLElement>('button, [role="button"], .ds-icon-button')]
+    .filter((button) => isSendAction(button) && isVisibleControl(button));
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
+function isVisibleControl(button: HTMLElement): boolean {
+  if (!button.isConnected) return false;
+  for (let node: HTMLElement | null = button; node; node = node.parentElement) {
+    if (node.hidden || node.hasAttribute('inert') || node.getAttribute('aria-hidden') === 'true') return false;
+    const style = node.ownerDocument.defaultView?.getComputedStyle(node);
+    if (style?.display === 'none' || style?.visibility === 'hidden' || style?.visibility === 'collapse' || style?.opacity === '0') return false;
+  }
+  return true;
 }
 
 export function isDisabled(button: HTMLElement | null): boolean {
@@ -57,9 +68,10 @@ export function isDisabled(button: HTMLElement | null): boolean {
 
 export function isSendAction(button: HTMLElement | null): boolean {
   if (!button) return false;
-  const label = `${button.getAttribute('aria-label') ?? ''} ${button.getAttribute('data-testid') ?? ''} ${button.textContent ?? ''}`;
-  if (/stop|停止/i.test(label)) return false;
-  if (/send|发送/i.test(label) || button.matches('button[type="submit"]')) return true;
+  const labels = [button.getAttribute('aria-label'), button.getAttribute('title'), button.textContent].map((label) => label?.trim() ?? '').filter(Boolean);
+  if (labels.some((label) => /stop|停止|feedback|反馈|search|搜索|attach|附件|upload|上传/i.test(label))) return false;
+  if (labels.length) return labels.every((label) => /^(发送(?:消息)?|send(?: message)?)$/i.test(label));
+  if (button.getAttribute('data-testid') === 'send-button') return true;
   // The current official unlabeled control has this upward-arrow path. Unknown
   // icons (especially Stop during generation) are never clicked automatically.
   return button.matches('.ds-button--primary.ds-button--circle')

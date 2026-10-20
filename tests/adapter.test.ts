@@ -41,7 +41,7 @@ describe('DeepSeek DOM adapter', () => {
     expect(sources[0].text).toBe(payload());
   });
   it('recognizes the official unlabeled send button and its disabled class', () => {
-    document.body.innerHTML = '<div><div><textarea placeholder="给 DeepSeek 发送消息 "></textarea></div><div role="button" class="ds-button ds-button--iconLabelPrimary">附件</div><div role="button" class="ds-button ds-button--primary ds-button--circle ds-button--disabled"><svg></svg></div></div>';
+    document.body.innerHTML = '<div><div><textarea placeholder="给 DeepSeek 发送消息 "></textarea></div><div role="button" class="ds-button ds-button--iconLabelPrimary">附件</div><div role="button" class="ds-button ds-button--primary ds-button--circle ds-button--disabled"><svg><path d="M7 3V15.0417H7V3.95579" /></svg></div></div>';
     const send = findSendButton(findComposer(document)!);
     expect(send).toBe(document.querySelector('.ds-button--primary'));
     expect(isDisabled(send)).toBe(true);
