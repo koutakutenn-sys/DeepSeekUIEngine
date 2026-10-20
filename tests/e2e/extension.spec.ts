@@ -120,6 +120,35 @@ test('P1 charts render real SVG, preserve line gaps and expose exact values with
   } finally { page.off('pageerror', onError); }
 });
 
+test('P1 charts render finite subnormal values without failing the whole reply', async () => {
+  // Smallest positive JS number is valid protocol data; dividing the span into nice ticks can underflow.
+  for (const [a, b] of [[-Number.MIN_VALUE, 0], [Number.MIN_VALUE, Number.MIN_VALUE],
+    [-Number.MIN_VALUE, Number.MIN_VALUE], [1e-301, 1.0000000000000002e-301], [0, Number.MIN_VALUE]]) {
+    await showP1([
+      { ...lineChart, series: [{ key: 'a', label: 'A' }], items: [
+        { label: '零', values: { a } }, { label: '最小正数', values: { a: b } },
+      ] },
+      { ...pieChart, items: [{ label: '最小正数', value: Number.MIN_VALUE }] },
+      { ...scatterChart, items: [{ x: a, y: a }, { x: b, y: b }] },
+    ]);
+    await expect(page.locator('[data-dsui-host]')).toHaveCount(1);
+    await expect(page.locator('.recharts-surface')).toHaveCount(3);
+    await expect(page.locator('.recharts-line-dot')).toHaveCount(2);
+    await expect(page.locator('.recharts-pie-sector')).toHaveCount(1);
+    await expect(page.locator('.recharts-scatter-symbol')).toHaveCount(2);
+    if (a !== b) {
+      const y = await page.locator('.recharts-line-dot').evaluateAll((dots) => dots.map((dot) => Number(dot.getAttribute('cy'))));
+      expect(y[1]).toBeLessThan(y[0]); // Distinct values must remain distinct on screen, even at the smallest scale.
+    }
+    expect(await page.locator('[data-dsui-host] svg *').evaluateAll((nodes) => nodes.every((node) =>
+      [...node.attributes].every((attribute) => !/NaN|Infinity/.test(attribute.value))))).toBe(true);
+  }
+  for (const summary of await page.getByText('查看数据', { exact: true }).all()) await summary.click();
+  const smallest = '5e-324';
+  await expect(page.getByRole('table', { name: '每周趋势原始数据' }).getByRole('row').nth(2).getByRole('cell')).toHaveText(['最小正数', smallest]);
+  await expect(page.getByRole('table', { name: '实验坐标原始数据' }).getByRole('row').nth(2).getByRole('cell')).toHaveText(['数据点 2', smallest, smallest]);
+});
+
 test('P1 panels support keyboard/touch, preserve visited state and whitespace streams, and keep cards inert', async ({}, testInfo) => {
   const literal = '<img src=x onerror=alert(1)>';
   const interactiveTabs = { ...tabs, items: [

@@ -2,6 +2,7 @@ import {
   CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer,
   Scatter, ScatterChart, Tooltip, XAxis, YAxis,
 } from 'recharts';
+import { scaleLinear, type ScaleLinear } from 'd3-scale';
 import type { LeafBlock } from '../protocol';
 import { display } from './display';
 
@@ -11,6 +12,22 @@ const tooltipStyle = { background: 'var(--dsui-surface)', border: '1px solid var
 const color = (index: number) => `var(--dsui-chart-${index % 6 + 1})`;
 const unitLabel = (label: string, unit?: string) => unit ? `${label}（${unit}）` : label;
 const shortTick = (value: string) => value.length > 12 ? `${value.slice(0, 11)}…` : value;
+
+function endpointTicks(scale: ScaleLinear<number, number>): ScaleLinear<number, number> {
+  const copy = scale.copy;
+  scale.ticks = () => [...new Set(scale.domain())];
+  scale.copy = () => endpointTicks(copy());
+  return scale;
+}
+
+function numericAxis(values: number[]) {
+  if (!values.length) return {};
+  const min = Math.min(...values), max = Math.max(...values), span = max - min;
+  // Nice-tick rounding underflows; D3's default ticks can be empty or throw for tiny spans.
+  // Recharts' graphical selectors ignore the axis ticks prop, so the D3 scale needs the fallback too.
+  return (span > 0 && span < 1e-300) || (span === 0 && min !== 0 && Math.abs(min) < 1e-300)
+    ? { niceTicks: 'none' as const, scale: endpointTicks(scaleLinear()) } : {};
+}
 
 function Legend({ labels }: { labels: string[] }) {
   return <ul className="chart-legend" aria-label="图例">{labels.map((label, index) => <li key={index}>
@@ -22,7 +39,7 @@ function ChartData({ title, headers, rows }: { title: string; headers: string[];
   return <details className="chart-data"><summary>查看数据</summary><div className="table-scroll" tabIndex={0} aria-label={`${title}原始数据，可横向滚动`}>
     <table><caption className="sr-only">{title}原始数据</caption>
       <thead><tr>{headers.map((header, index) => <th key={index}>{header}</th>)}</tr></thead>
-      <tbody>{rows.map((row, index) => <tr key={index}>{row.map((value, column) => <td key={column}>{display(value)}</td>)}</tr>)}</tbody>
+      <tbody>{rows.map((row, index) => <tr key={index}>{row.map((value, column) => <td key={column}>{typeof value === 'number' ? String(value) : display(value)}</td>)}</tr>)}</tbody>
     </table>
   </div></details>;
 }
@@ -51,7 +68,7 @@ export function DataChart({ block }: { block: ChartBlock }) {
           {block.type === 'line_chart' ? <LineChart data={block.items} margin={{ top: 14, right: 16, left: 0, bottom: 12 }} accessibilityLayer>
             <CartesianGrid vertical={false} stroke="var(--dsui-line)" strokeDasharray="3 3" />
             <XAxis dataKey="label" tick={tick} tickFormatter={shortTick} interval="preserveStartEnd" axisLine={false} tickLine={false} />
-            <YAxis width={64} tick={tick} domain={['auto', 'auto']} axisLine={false} tickLine={false} />
+            <YAxis width={64} tick={tick} domain={['auto', 'auto']} {...numericAxis(block.items.flatMap((item) => block.series.flatMap((series) => item.values[series.key] === null ? [] : [item.values[series.key]!])))} axisLine={false} tickLine={false} />
             <Tooltip cursor={false} contentStyle={tooltipStyle} />
             {block.series.map((series, index) => <Line key={series.key} name={series.label}
               dataKey={(item: (typeof block.items)[number]) => item.values[series.key]} type="linear"
@@ -65,8 +82,8 @@ export function DataChart({ block }: { block: ChartBlock }) {
             </Pie>
           </PieChart> : <ScatterChart margin={{ top: 14, right: 16, left: 0, bottom: 12 }} accessibilityLayer>
             <CartesianGrid stroke="var(--dsui-line)" strokeDasharray="3 3" />
-            <XAxis type="number" dataKey="x" name={block.xLabel ?? 'X'} unit={block.xUnit} tick={tick} domain={['auto', 'auto']} axisLine={false} tickLine={false} />
-            <YAxis type="number" dataKey="y" name={block.yLabel ?? 'Y'} unit={block.yUnit} width={64} tick={tick} domain={['auto', 'auto']} axisLine={false} tickLine={false} />
+            <XAxis type="number" dataKey="x" name={block.xLabel ?? 'X'} unit={block.xUnit} tick={tick} domain={['auto', 'auto']} {...numericAxis(block.items.map((item) => item.x))} axisLine={false} tickLine={false} />
+            <YAxis type="number" dataKey="y" name={block.yLabel ?? 'Y'} unit={block.yUnit} width={64} tick={tick} domain={['auto', 'auto']} {...numericAxis(block.items.map((item) => item.y))} axisLine={false} tickLine={false} />
             <Tooltip cursor={false} contentStyle={tooltipStyle} />
             <Scatter data={block.items} name={block.title} fill={color(0)} isAnimationActive={false} />
           </ScatterChart>}

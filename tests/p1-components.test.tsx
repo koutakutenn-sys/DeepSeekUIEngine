@@ -31,6 +31,15 @@ describe('P1 real components', () => {
     fireEvent.click(screen.getByText(/查看数据/));
     expect(screen.getAllByRole('cell').map((cell) => cell.textContent)).toEqual(['零值', '0']);
   });
+  it('preserves distinct finite numbers in original chart data without rounding them together', () => {
+    render(<BlockView block={block({ ...lineChart, series: [{ key: 'a', label: 'A' }], items: [
+      { label: '接近上限', values: { a: 999999999999.9999 } }, { label: '上限', values: { a: 1000000000000 } },
+    ] })} />);
+    fireEvent.click(screen.getByText(/查看数据/));
+    const rows = screen.getAllByRole('row');
+    expect(within(rows[1]).getAllByRole('cell').map((cell) => cell.textContent)).toEqual(['接近上限', '999999999999.9999']);
+    expect(within(rows[2]).getAllByRole('cell').map((cell) => cell.textContent)).toEqual(['上限', '1000000000000']);
+  });
   it('preserves signed scatter coordinates and axis units in its data table', () => {
     render(<BlockView block={block(scatterChart)} />);
     fireEvent.click(screen.getByText(/查看数据/));
