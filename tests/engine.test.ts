@@ -2,8 +2,53 @@ import { act, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { startEngine } from '../src/content/engine';
 import { message, metrics, payload, quadratic, table, timeline } from './fixtures';
+import { infoCard, progress } from './p1-fixtures';
 
 describe('live rendering engine', () => {
+  it('counts nested blocks across code fences so a reply cannot exceed 12 total blocks', async () => {
+    const group = (id: string, count: number) => ({ id, type: 'tabs', title: id, items: Array.from({ length: count }, (_, i) => ({
+      id: `p${i}`, label: `${i}`, blocks: [{ ...infoCard, id: `${id}-${i}` }],
+    })) });
+    const first = message(payload([group('first', 6)])); // 7 blocks.
+    const second = message(payload([group('second', 4)])); // 5 blocks, total 12.
+    const third = message(payload([progress])); // One too many despite only 3 roots.
+    first.article.append(second.pre, third.pre);
+    let engine!: ReturnType<typeof startEngine>;
+    await act(async () => { engine = startEngine(document, 'auto'); });
+    try {
+      expect(first.pre.hidden).toBe(true);
+      expect(second.pre.hidden).toBe(true);
+      expect(third.pre.hidden).toBe(false);
+      expect(document.querySelectorAll('[data-dsui-host]')).toHaveLength(2);
+    } finally { await act(async () => engine.dispose()); }
+  });
+  it('rejects a later root whose ID duplicates a nested block in an earlier code fence', async () => {
+    const first = message(payload([{ id: 'group', type: 'tabs', title: '分组', items: [{ id: 'one', label: '一', blocks: [infoCard] }] }]));
+    const second = message(payload([{ ...progress, id: infoCard.id }]));
+    first.article.append(second.pre);
+    let engine!: ReturnType<typeof startEngine>;
+    await act(async () => { engine = startEngine(document, 'auto'); });
+    try {
+      expect(first.pre.hidden).toBe(true);
+      expect(second.pre.hidden).toBe(false);
+      expect(document.querySelectorAll('[data-dsui-host]')).toHaveLength(1);
+    } finally { await act(async () => engine.dispose()); }
+  });
+  it('keeps the existing three-function-plot budget across multiple containers and code fences', async () => {
+    const group = (id: string, count: number) => ({ id, type: 'tabs', title: id, items: [{ id: 'one', label: '实验',
+      blocks: Array.from({ length: count }, (_, i) => ({ ...quadratic, id: `${id}-plot-${i}` })),
+    }] });
+    const first = message(payload([group('first', 3)]));
+    const second = message(payload([group('second', 1)]));
+    first.article.append(second.pre);
+    let engine!: ReturnType<typeof startEngine>;
+    await act(async () => { engine = startEngine(document, 'auto'); });
+    try {
+      expect(first.pre.hidden).toBe(true);
+      expect(second.pre.hidden).toBe(false);
+      expect(document.querySelectorAll('[data-dsui-host]')).toHaveLength(1);
+    } finally { await act(async () => engine.dispose()); }
+  });
   it('preserves plot interaction state when a completed stream only appends whitespace', async () => {
     const { code } = message(payload([quadratic]));
     let engine!: ReturnType<typeof startEngine>;

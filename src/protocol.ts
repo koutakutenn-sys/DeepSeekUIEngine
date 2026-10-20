@@ -120,12 +120,25 @@ const accordionSchema = z.strictObject({
   && block.defaultOpen.every((id) => block.items.some((item) => item.id === id))),
 { message: 'Initially open accordion items must exist and be unique' });
 
-export const payloadSchema = z.strictObject({
+const payloadBaseSchema = z.strictObject({
   protocol: z.literal('dsui'), version: z.literal(1),
   blocks: z.array(z.discriminatedUnion('type', [leafBlockSchema, tabsSchema, accordionSchema])).min(1).max(3),
-}).superRefine((value, context) => {
-  const all = value.blocks.flatMap((block) => block.type === 'tabs' || block.type === 'accordion'
+});
+
+export type Payload = z.infer<typeof payloadBaseSchema>;
+export type Block = Payload['blocks'][number];
+export type LeafBlock = z.infer<typeof leafBlockSchema>;
+export type ContainerBlock = Extract<Block, { type: 'tabs' | 'accordion' }>;
+export type FunctionPlotBlock = Extract<Block, { type: 'function_plot' }>;
+
+/** Count all declared content, including unvisited panels, without recursive layouts. */
+export function payloadBlocks(payload: Payload): Block[] {
+  return payload.blocks.flatMap((block) => block.type === 'tabs' || block.type === 'accordion'
     ? [block, ...block.items.flatMap((item) => item.blocks)] : [block]);
+}
+
+export const payloadSchema = payloadBaseSchema.superRefine((value, context) => {
+  const all = payloadBlocks(value);
   if (new Set(all.map((block) => block.id)).size !== all.length) {
     context.addIssue({ code: 'custom', message: 'Block IDs must be globally unique' });
   }
@@ -133,12 +146,6 @@ export const payloadSchema = z.strictObject({
     context.addIssue({ code: 'custom', message: 'Reply allows at most 12 total blocks and 3 function plots' });
   }
 });
-
-export type Payload = z.infer<typeof payloadSchema>;
-export type Block = Payload['blocks'][number];
-export type LeafBlock = z.infer<typeof leafBlockSchema>;
-export type ContainerBlock = Extract<Block, { type: 'tabs' | 'accordion' }>;
-export type FunctionPlotBlock = Extract<Block, { type: 'function_plot' }>;
 
 /** No evaluation, HTML parsing or network access. Incomplete streams remain untouched. */
 export function parsePayload(source: string): Payload | null {
