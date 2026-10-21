@@ -45,6 +45,8 @@ The enable button is temporarily disabled when there is an unsent draft, an acti
 
 The extension supports the official `.md-code-block` / `<pre><span>…</span></pre>` structure and Markdown code blocks with language classes. Both `dsui` and `json` labels are recognized, but the content must fully pass DSUI protocol validation. Ordinary JSON is not rendered as UI.
 
+v0.3.2 accepts an optional `latex` field for typeset function definitions, for example `"latex":"y=\\frac{\\sin x}{x}"`. Local KaTeX produces native MathML for fractions, radicals and superscripts. The plot still evaluates `expression`; LaTeX keeps symbolic parameters, with current values shown beside sliders. Invalid or unsupported TeX falls back to the plain definition while keeping the plot usable. Reintroduce the updated format instructions or enable UI in a new chat to use it in an older conversation.
+
 ## P1 rich UI (v0.3)
 
 Version v0.3 adds the following components.
@@ -75,6 +77,7 @@ The current source uses the following main runtime libraries. See `package-lock.
 | [Math.js](https://github.com/josdejong/mathjs) | Parsing mathematical expression syntax trees, checked and evaluated by this project's allowlist and restricted adapter |
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | Interval operations for mathematical expressions used by function-plot's interval sampling |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | Decimal slider stepping and snapping calculations |
+| [KaTeX](https://github.com/KaTeX/KaTeX) | Converts optional LaTeX function definitions to native MathML without external fonts |
 | [Zod](https://github.com/colinhacks/zod) | Strict validation of declarative DSUI data and JSON Schema export |
 
 This project implements the DSUI protocol, safety boundaries, official-page adapter, original-source fallback, theme styles, cards, tabs, accordions, and control adapters. Progress indicators use the browser's native `progress` element. Tabs and accordions use React buttons and ARIA relationships; Radix UI and shadcn/ui are not currently integrated. See the preceding section for the release status of P1 features.

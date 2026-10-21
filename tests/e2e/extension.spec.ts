@@ -67,7 +67,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => { await context?.close(); });
 test.afterEach(async ({}, testInfo) => {
-  if (testInfo.title.startsWith('P1') || testInfo.title.startsWith('security hardening')) {
+  if (testInfo.title.startsWith('P1') || testInfo.title.startsWith('security hardening') || testInfo.title.startsWith('LaTeX')) {
     await selectMode(/Auto/);
     await page.setViewportSize({ width: 1024, height: 1000 });
     await page.goto('https://chat.deepseek.com/');
@@ -79,6 +79,58 @@ async function showP1(blocks: unknown[]) {
   await page.goto('https://chat.deepseek.com/a/chat/s/p1-fixture');
   await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload(blocks));
 }
+
+test('LaTeX function definitions render offline in native MathML and retain slider interaction on narrow dark screens', async ({}, testInfo) => {
+  const requests: string[] = [];
+  const record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };
+  const latex = String.raw`y=a\frac{\sin x}{\sqrt{x^2+1}}`;
+  await showP1([]);
+  page.on('request', record);
+  try {
+    await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([
+      { ...quadratic, preset: 'expression', expression: 'a*sin(x)/sqrt(x^2+1)', latex, parameters: [quadratic.parameters[0]] },
+    ]));
+    const math = page.locator('.plot-formula math');
+    await expect(math).toBeVisible();
+    await expect(math.locator('mfrac')).toHaveCount(1);
+    await expect(math.locator('msqrt')).toHaveCount(1);
+    const curve = page.locator('[data-plot-curve]');
+    const before = await curve.getAttribute('d');
+    await page.getByRole('slider', { name: 'a', exact: true }).press('ArrowRight');
+    await expect(curve).not.toHaveAttribute('d', before!);
+    await expect(math.locator('annotation')).toHaveText(latex);
+    await page.getByRole('button', { name: '复位参数', exact: true }).click();
+    await expect(curve).toHaveAttribute('d', before!);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => { document.documentElement.classList.add('dark'); });
+    await expect(page.locator('[data-dsui-host]').first()).toHaveAttribute('data-theme', 'dark');
+    await expect(math).toBeVisible();
+    const bounds = await page.locator('.plot-formula').boundingBox();
+    expect(bounds!.width).toBeLessThan(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(requests).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath('latex-dark-narrow.png') });
+  } finally { page.off('request', record); }
+});
+
+test('LaTeX failures retain a working curve and never create remote resources or clickable links', async () => {
+  const requests: string[] = [];
+  const record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };
+  await showP1([]);
+  page.on('request', record);
+  try {
+    for (const latex of [String.raw`\frac{1`, String.raw`\href{https://example.invalid}{x}`,
+      String.raw`\includegraphics{https://example.invalid/image.png}`, String.raw`\htmlStyle{position:fixed}{x}`]) {
+      await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([
+        { ...quadratic, preset: 'expression', expression: 'x', parameters: [], latex },
+      ]));
+      await expect(page.locator('.plot-formula')).toHaveText('y = x');
+      await expect(page.locator('.plot-formula math, .plot-formula a, .plot-formula img, .plot-formula iframe')).toHaveCount(0);
+      await expect(page.locator('[data-plot-curve]')).toHaveAttribute('d', /M /);
+    }
+    expect(requests).toEqual([]);
+  } finally { page.off('request', record); }
+});
 
 test('security hardening: popup version follows the installed extension manifest', async () => {
   const manifest = JSON.parse(await readFile('public/manifest.json', 'utf8'));

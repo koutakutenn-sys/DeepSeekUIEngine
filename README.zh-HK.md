@@ -45,6 +45,8 @@ npm run build
 
 支援官方實際使用的 `.md-code-block` / `<pre><span>…</span></pre>` 結構，以及帶語言類別的 Markdown 程式碼區塊。可辨識 `dsui` 和 `json` 標籤，但內容必須完整通過 DSUI 協定驗證；一般 JSON 不會呈現為 UI。
 
+v0.3.2 支援讓模型透過可選的 `latex` 欄位排版函數定義，例如 `"latex":"y=\\frac{\\sin x}{x}"`。分式、根式及上下標由本機 KaTeX 顯示為 MathML；繪圖仍使用 `expression`，LaTeX 中的參數保留符號，目前數值顯示於滑桿旁。不合法或不支援的 TeX 會改用一般公式，保留曲線和滑桿。舊對話需要重新提供格式說明，或在新對話啟用 UI，才能讓模型獲得新格式。
+
 ## P1 常用富 UI（v0.3）
 
 v0.3 新增以下元件：
@@ -75,6 +77,7 @@ v0.3 新增以下元件：
 | [Math.js](https://github.com/josdejong/mathjs) | 解析數學運算式的語法樹；由本專案的白名單及受限配接層檢查與計算 |
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 數學運算式的區間運算，供函數圖像的區間取樣使用 |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑桿數值的十進制步進及對齊計算 |
+| [KaTeX](https://github.com/KaTeX/KaTeX) | 將可選的 LaTeX 函數定義轉為原生 MathML，不載入外部字型 |
 | [Zod](https://github.com/colinhacks/zod) | DSUI 宣告式資料的嚴格結構驗證及 JSON Schema 匯出 |
 
 DSUI 協定、安全邊界、官方頁面配接、原文還原、主題樣式，以及卡片、分頁、摺疊面板與控制項配接程式碼由本專案實作。進度列使用瀏覽器原生 `progress` 元素；分頁及摺疊面板使用 React 按鈕與 ARIA 關係，目前未整合 Radix UI 或 shadcn/ui。P1 新功能的發佈狀態見上一節。
