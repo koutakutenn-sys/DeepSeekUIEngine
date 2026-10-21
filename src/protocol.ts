@@ -62,8 +62,10 @@ const plotParameter = z.strictObject({
 const viewportSchema = z.strictObject({ xMin: coordinate, xMax: coordinate, yMin: coordinate, yMax: coordinate })
   .refine((v) => [v.xMax - v.xMin, v.yMax - v.yMin].every((span) => span >= PLOT_LIMITS.minSpan && span <= PLOT_LIMITS.maxSpan),
     { message: 'Viewport spans must be between 0.001 and 1000000' });
+const plotLatex = boundedText(1024).min(1).refine((value) => value.trim().length > 0, { message: 'Empty LaTeX definition' }).optional();
 const quadraticPlotSchema = z.strictObject({
   ...base, type: z.literal('function_plot'), preset: z.literal('quadratic'),
+  latex: plotLatex,
   parameters: z.array(plotParameter).length(3).refine((p) => new Set(p.map((entry) => entry.key)).size === 3 && p.every((entry) => ['a', 'b', 'c'].includes(entry.key)),
     { message: 'Parameters must contain exactly a, b and c' }),
   viewport: viewportSchema,
@@ -71,6 +73,7 @@ const quadraticPlotSchema = z.strictObject({
 const expressionPlotSchema = z.strictObject({
   ...base, type: z.literal('function_plot'), preset: z.literal('expression'),
   expression: boundedText(256).min(1),
+  latex: plotLatex,
   parameters: z.array(plotParameter).max(6).refine((p) => new Set(p.map((entry) => entry.key)).size === p.length,
     { message: 'Parameters must be unique' }),
   viewport: viewportSchema,

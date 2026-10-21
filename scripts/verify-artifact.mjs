@@ -37,6 +37,12 @@ function isPropertyName(node) {
 }
 
 export function verifyScript(source, { name, standalone }) {
+  // Chrome's extension loader rejects literal Unicode noncharacters even when
+  // a permissive UTF-8 decoder accepts their bytes. Escaped JS sentinels are fine.
+  for (const character of source) {
+    const code = character.codePointAt(0);
+    assert(!((code >= 0xfdd0 && code <= 0xfdef) || (code & 0xffff) >= 0xfffe), `${name}: literal Unicode noncharacter`);
+  }
   const virtualFile = '/__dsui_bundle__.js';
   const syntax = ts.createSourceFile(virtualFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   assert.equal(syntax.parseDiagnostics.length, 0, `${name}: invalid JavaScript`);

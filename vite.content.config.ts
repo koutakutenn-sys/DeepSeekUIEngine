@@ -3,12 +3,15 @@ import react from '@vitejs/plugin-react';
 import { plotAliases } from './plot-aliases';
 import { licenseModules } from './scripts/license-modules';
 import { zodNoCodegen } from './scripts/zod-no-codegen';
+import { katexTokenReader } from './scripts/katex-token-reader';
 
 export default defineConfig({
-  plugins: [zodNoCodegen(), react(), licenseModules('content')],
+  plugins: [zodNoCodegen(), katexTokenReader(), react(), licenseModules('content')],
   resolve: { alias: plotAliases },
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
   publicDir: 'public',
+  // Escape KaTeX's U+FFFF lexer sentinel: Chrome rejects it literally in scripts.
+  esbuild: { charset: 'ascii' },
   build: {
     target: 'chrome120',
     outDir: 'dist',
