@@ -49,6 +49,38 @@ describe('static SVG sanitization boundary', () => {
       expect(() => createSafeSvg(wrap(`<rect fill="url(${url})"/>`), 'remote')).toThrow();
     }
   });
+  it('rejects acyclic marker chains before their multiplicative paint work reaches the browser', () => {
+    // Only 22 elements, but ten mid-markers per level would paint 10^8 leaf instances.
+    const markers = ['<marker id="m0" markerWidth="10" markerHeight="10"><rect width="1" height="1" opacity="0.5"/></marker>'];
+    for (let level = 1; level <= 8; level++) {
+      markers.push(`<marker id="m${level}" markerWidth="10" markerHeight="10"><polyline points=".1,.1 .2,.2 .1,.1 .2,.2 .1,.1 .2,.2 .1,.1 .2,.2 .1,.1 .2,.2 .1,.1 .2,.2" marker-mid="url(#m${level - 1})"/></marker>`);
+    }
+    expect(() => createSafeSvg(wrap(`<defs>${markers.join('')}</defs><path d="M0 0L1 1" marker-end="url(#m8)"/>`), 'expansion')).toThrow();
+  });
+  it.each([
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" marker-mid="url(#arrow)"><defs><marker id="arrow"><polyline points="0,0 1,1 2,2"/></marker></defs><path d="M0 0L1 1"/></svg>',
+    wrap('<g marker-end="url(#arrow)"><defs><marker id="arrow"><path d="M0 0L1 1"/></marker></defs><path d="M0 0L1 1"/></g>'),
+    wrap('<path d="M0 0L1 1" marker-end="url(#arrow)"><defs><marker id="arrow"><path d="M0 0L1 1"/></marker></defs></path>'),
+    wrap('<defs><marker id="arrow"><path d="M0 0L1 1"/></marker><marker id="outer" marker-end="url(#arrow)"><path d="M0 0L1 1"/></marker></defs><path d="M0 0L1 1" marker-end="url(#outer)"/>'),
+    wrap('<defs><marker id="arrow"><path d="M0 0L1 1"/></marker><marker id="outer"><g marker-end="url(#arrow)"><path d="M0 0L1 1"/></g></marker></defs><path d="M0 0L1 1" marker-end="url(#outer)"/>'),
+    wrap('<defs><clipPath id="clip"><rect width="1" height="1"/></clipPath><clipPath id="outer"><rect width="1" height="1" clip-path="url(#clip)"/></clipPath></defs><rect width="2" height="2" clip-path="url(#outer)"/>'),
+    wrap('<defs><clipPath id="clip"><rect width="1" height="1"/></clipPath><marker id="arrow"><rect width="1" height="1" clip-path="url(#clip)"/></marker></defs><path d="M0 0L1 1" marker-end="url(#arrow)"/>'),
+  ])('rejects inherited markers and rendering-resource expansion %s', (source) => {
+    expect(() => createSafeSvg(source, 'resources')).toThrow();
+  });
+  it('preserves gradient paint inside a non-expanding marker', () => {
+    const root = createSafeSvg(wrap('<defs><linearGradient id="paint"><stop offset="0" stop-color="#123"/></linearGradient><marker id="arrow"><path d="M0 0L1 1" fill="url(#paint)"/></marker></defs><path d="M0 0L1 1" marker-end="url(#arrow)"/>'), 'paint');
+    expect(root.querySelector('marker path')?.getAttribute('fill')).toBe('url(#dsui-svg-paint-paint)');
+  });
+  it.each(['<rect width="1 2" height="3"/>', '<circle r="1 2"/>', '<path d="z"/>',
+    '<path d="M0 0L1"/>', '<path d="M0 0Z1 1"/>', '<path d="M0 0A1 1 0 2 0 2 2"/>', '<path d="M,0 0"/>'])('rejects malformed scalar geometry and incomplete path commands %s', (body) => {
+    expect(() => createSafeSvg(wrap(body), 'geometry')).toThrow();
+  });
+  it('retains repeated path coordinates, curves, arcs and text positioning lists', () => {
+    const root = createSafeSvg(wrap('<path d="M0 0 1 1h2v2L4 4C5 5 6 6 7 7s1 1 2 2Q10 10 11 11t1 1A2 2 0 0 1 15 15z"/><text x="1 2" dx="0 1">AB</text>'), 'geometry');
+    expect(root.querySelector('path')).not.toBeNull();
+    expect(root.querySelector('text')?.getAttribute('x')).toBe('1 2');
+  });
   it('enforces raw size, node count and depth budgets before mounting', () => {
     expect(() => createSafeSvg(wrap('<rect/>'.repeat(500)), 'nodes')).toThrow();
     expect(() => createSafeSvg(wrap('<g>'.repeat(16) + '<rect/>' + '</g>'.repeat(16)), 'depth')).toThrow();

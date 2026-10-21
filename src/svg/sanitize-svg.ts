@@ -37,6 +37,35 @@ function bounds(value: string): number[] {
   requireSvg(values.length === 4 && values[2] >= 0.001 && values[3] >= 0.001);
   return values;
 }
+function pathData(value: string) {
+  const tokens = [...value.matchAll(/[MmZzLlHhVvCcSsQqTtAa]|[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/g)];
+  requireSvg(tokens.length > 0 && /^[Mm]$/.test(tokens[0][0]));
+  const isCommand = (token: string) => /^[A-Za-z]$/.test(token);
+  let end = 0, count = 0;
+  for (let index = 0; index < tokens.length; index++) {
+    const token = tokens[index], gap = value.slice(end, token.index);
+    requireSvg(/^[\s,]*$/.test(gap) && (gap.match(/,/g)?.length ?? 0) <= 1);
+    if (gap.includes(',')) requireSvg(index > 0 && !isCommand(tokens[index - 1][0]) && !isCommand(token[0]));
+    if (!isCommand(token[0])) {
+      const number = Number(token[0]);
+      requireSvg(++count <= 2000 && Number.isFinite(number) && Math.abs(number) <= 1_000_000);
+    }
+    end = token.index! + token[0].length;
+  }
+  requireSvg(/^\s*$/.test(value.slice(end)));
+  const arities: Record<string, number> = { M: 2, Z: 0, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7 };
+  let index = 0;
+  while (index < tokens.length) {
+    const command = tokens[index++][0].toUpperCase(), arity = arities[command], args: string[] = [];
+    requireSvg(arity !== undefined);
+    while (index < tokens.length && !isCommand(tokens[index][0])) args.push(tokens[index++][0]);
+    requireSvg(arity === 0 ? args.length === 0 : args.length >= arity && args.length % arity === 0);
+    if (command === 'A') for (let offset = 0; offset < args.length; offset += 7) {
+      requireSvg(Number(args[offset]) >= 0 && Number(args[offset + 1]) >= 0
+        && /^[01]$/.test(args[offset + 3]) && /^[01]$/.test(args[offset + 4]));
+    }
+  }
+}
 function measure(root: Element): Element[] {
   const nodes: Element[] = [], stack = [{ node: root, depth: 1 }];
   while (stack.length) {
@@ -98,9 +127,18 @@ export function createSafeSvg(source: string, prefix: string): SVGSVGElement {
           requireSvg(['none', 'currentColor', 'transparent'].includes(value) || !!probe.style.color);
         }
       } else if (name === 'clip-path') {
-        if (value !== 'none') reference(node, name, value, ['clipPath']);
+        if (value !== 'none') {
+          requireSvg(!node.closest('defs, linearGradient, radialGradient, clipPath, marker'));
+          reference(node, name, value, ['clipPath']);
+        }
       } else if (name.startsWith('marker-')) {
-        if (value !== 'none') reference(node, name, value, ['marker']);
+        if (value !== 'none') {
+          // Prevent inherited or acyclic nested markers from multiplying paint work.
+          requireSvg(['path', 'line', 'polyline', 'polygon'].includes(node.localName)
+            && !node.closest('defs, linearGradient, radialGradient, clipPath, marker')
+            && !node.querySelector('marker'));
+          reference(node, name, value, ['marker']);
+        }
       } else if (Object.hasOwn(enums, name)) requireSvg(enums[name].includes(value));
       else if (['opacity', 'fill-opacity', 'stroke-opacity', 'stop-opacity', 'offset'].includes(name)) {
         const values = numbers(value, name === 'offset');
@@ -112,14 +150,14 @@ export function createSafeSvg(source: string, prefix: string): SVGSVGElement {
         const remainder = value.replace(/(?:matrix|translate|scale|rotate|skewX|skewY)\(\s*[-+\d.eE,\s]+\)\s*/g, '');
         requireSvg(!remainder && value.length > 0); numbers(value.replace(/[A-Za-z]+\(/g, '').replace(/\)/g, ' '));
       } else if (name === 'd') {
-        requireSvg(/^[MmZzLlHhVvCcSsQqTtAa\d.eE,+\-\s]+$/.test(value));
-        const coordinates = value.replace(/[MmZzLlHhVvCcSsQqTtAa]/g, ' ');
-        if (coordinates.trim()) numbers(coordinates);
+        pathData(value);
       } else if (name === 'points' || name === 'stroke-dasharray') {
         if (name !== 'stroke-dasharray' || value !== 'none') requireSvg(numbers(value).length <= 2000);
       } else if (numeric.has(name) || name === 'orient') {
         const percent = ['linearGradient', 'radialGradient'].includes(node.localName) && ['x1', 'x2', 'y1', 'y2', 'cx', 'cy', 'r'].includes(name);
         const values = numbers(value, percent);
+        const textList = ['text', 'tspan'].includes(node.localName) && ['x', 'y', 'dx', 'dy'].includes(name);
+        requireSvg(textList || values.length === 1);
         if (value.endsWith('%')) requireSvg(values.length === 1 && Math.abs(values[0]) <= 100);
       }
       else requireSvg(false);

@@ -59,10 +59,11 @@ SVG 是叶区块，也可放在 tabs/accordion 内；仍计入原有区块预算
 
 - 根节点必须为 SVG 命名空间的 `svg`，必须有 `viewBox`；四个数均有限，绝对值不超过 1,000,000，宽高至少 0.001。扩展接管根宽高、比例及裁剪，响应容器宽度，显示高度最多 640px。
 - 允许 `svg/g/defs/path/rect/circle/ellipse/line/polyline/polygon/text/tspan/title/desc/linearGradient/radialGradient/stop/clipPath/marker`。不支持嵌套 SVG、过滤器、动画或交互。
-- 原始及清洗后的树都最多 500 个元素、16 层深度。几何数值有界，字体大小不超过 256；渐变坐标和 stop offset 可用 0–100%。路径/点列最多 2,000 个数值。XML 声明、DTD 和实体声明不接受；数值字符实体解码后的文字也受原有 Unicode 规则约束。
+- 原始及清洗后的树都最多 500 个元素、16 层深度。几何数值有界，标量属性只接受单个数值，文字的 x/y/dx/dy 可为数值列表；字体大小不超过 256，渐变坐标和 stop offset 可用 0–100%。路径/点列最多 2,000 个数值。路径须从 M/m 开始，命令带完整参数组，圆弧的两个标志分别写作 0 或 1。XML 声明、DTD 和实体声明不接受；数值字符实体解码后的文字也受原有 Unicode 规则约束。
 - 只接受固定几何及展示属性；文字、描边、填充和渐变可以使用合法色值。`style`、事件、链接、外部图片和字体均不接受；普通文本字段继续按文本处理。
 - 渐变、裁剪和箭头标记可用 `url(#id)` 引用本图对应定义，ID 以字母开头，只含字母数字、下划线及横线，最多 64 字符。重复、缺失、类型错误或循环引用均失败；所有 ID 和引用在挂载前获得每图独立前缀，避免跨区块串用。
-- DOMPurify 清除不支持的元素/属性，包括 `script/foreignObject/image/use/a/style` 等。清洗后仍含非法值、外部引用，或图形无效/超限时，整个原始 JSON 代码块恢复原文，不保留同块中部分增强视图。
+- `marker-*` 的非 none 引用只允许写在 defs/资源容器之外的 path/line/polyline/polygon 上，该几何元素也不能包含 marker 定义；不允许在根或分组继承箭头。defs/渐变/裁剪/标记内部不能引用 marker 或 clipPath，避免无环嵌套同样放大绘制量；标记内部仍可用渐变填充。
+- DOMPurify 清除不支持的元素/属性，包括 `script/foreignObject/image/use/a/style` 等。清洗后未通过白名单、参数或资源边界校验时，整个原始 JSON 代码块恢复原文，不保留同块中部分增强视图；扩展不保证对所有 SVG 视觉效果进行语义纠错。
 
 完整白名单在 [SVG 校验实现](../src/svg/sanitize-svg.ts)。本功能不为模型提供 HTML、JavaScript、任意 CSS、外部资源加载或自动动作能力；需要这些能力的原始 SVG 不属于此静态子集。
 

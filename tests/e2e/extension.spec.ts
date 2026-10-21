@@ -132,7 +132,12 @@ test('SVG sanitization removes active content, rejects external paints and resto
     await expect(page.locator('.svg-canvas > svg')).toBeVisible();
     await expect(page.locator('.svg-canvas script, .svg-canvas foreignObject, .svg-canvas image, .svg-canvas use, .svg-canvas style, .svg-canvas [onload]')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.dataset.svgExecuted)).toBeUndefined();
-    for (const svg of [wrap('<rect fill="url(https://example.invalid/a.svg#p)"/>'), wrap('<g>'.repeat(16) + '<rect/>' + '</g>'.repeat(16)), wrap('<rect/>'.repeat(500)), wrap('<text>误导&#x202e;文字</text>')]) {
+    for (const svg of [
+      wrap('<rect fill="url(https://example.invalid/a.svg#p)"/>'),
+      wrap('<g>'.repeat(16) + '<rect/>' + '</g>'.repeat(16)), wrap('<rect/>'.repeat(500)),
+      wrap('<text>误导&#x202e;文字</text>'), wrap('<rect width="1 2" height="3"/>'), wrap('<path d="z"/>'),
+      wrap('<defs><marker id="leaf"><rect width="1" height="1"/></marker><marker id="outer"><polyline points="0,0 1,1 2,2" marker-mid="url(#leaf)"/></marker></defs><path d="M0 0L1 1" marker-end="url(#outer)"/>'),
+    ]) {
       const source = payload([infoCard, { id: 'bad-svg', type: 'svg', title: '图', svg }]);
       await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, source);
       await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
