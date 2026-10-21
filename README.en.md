@@ -45,11 +45,11 @@ The enable button is temporarily disabled when there is an unsent draft, an acti
 
 The extension supports the official `.md-code-block` / `<pre><span>…</span></pre>` structure and Markdown code blocks with language classes. Both `dsui` and `json` labels are recognized, but the content must fully pass DSUI protocol validation. Ordinary JSON is not rendered as UI.
 
-v0.3.2 accepts an optional `latex` field for typeset function definitions, for example `"latex":"y=\\frac{\\sin x}{x}"`. Local KaTeX produces native MathML for fractions, radicals and superscripts. The plot still evaluates `expression`; LaTeX keeps symbolic parameters, with current values shown beside sliders. Invalid or unsupported TeX falls back to the plain definition while keeping the plot usable. Reintroduce the updated format instructions or enable UI in a new chat to use it in an older conversation.
+v0.3.3 accepts an optional `latex` field for typeset function definitions, for example `"latex":"y=\\frac{\\sin x}{x}"`. Local KaTeX produces native MathML for fractions, radicals and superscripts. The plot still evaluates `expression`; LaTeX keeps symbolic parameters, with current values shown beside sliders. Invalid or unsupported TeX falls back to the plain definition while keeping the plot usable. Reintroduce the updated format instructions or enable UI in a new chat to use it in an older conversation.
 
 ## P1 rich UI (v0.3)
 
-The current development branch also accepts per-item metric `color` (`#RGB` / `#RRGGBB`) for the value and accent border, with theme backgrounds preserved. A new `svg` block lets the model draw static diagrams with text, gradients and arrows. Local DOMPurify sanitization and a strict static allowlist precede native SVG rendering. Scripts, events, external links/images, arbitrary CSS, animation and filters are unsupported; invalid or oversized diagrams retain the original source. See the [protocol](docs/protocol.md#svg静态示意图). Reintroduce the updated instructions or enable UI in a new chat.
+v0.3.3 also accepts per-item metric `color` (`#RGB` / `#RRGGBB`) for the value and accent border, with theme backgrounds preserved. A new `svg` block lets the model draw static diagrams with text, gradients and arrows. Local DOMPurify sanitization and a strict static allowlist precede native SVG rendering. Scripts, events, external links/images, arbitrary CSS, animation and filters are unsupported; invalid or oversized diagrams retain the original source. See the [protocol](docs/protocol.md#svg静态示意图). Reintroduce the updated instructions or enable UI in a new chat.
 
 Version v0.3 adds the following components.
 
