@@ -120,7 +120,8 @@ test('LaTeX failures retain a working curve and never create remote resources or
   page.on('request', record);
   try {
     for (const latex of [String.raw`\frac{1`, String.raw`\href{https://example.invalid}{x}`,
-      String.raw`\includegraphics{https://example.invalid/image.png}`, String.raw`\htmlStyle{position:fixed}{x}`]) {
+      String.raw`\includegraphics{https://example.invalid/image.png}`, String.raw`\htmlStyle{position:fixed}{x}`,
+      String.raw`\def1{x}1`, String.raw`\href1x`, String.raw`\red{x}`, String.raw`\grayA{x}`]) {
       await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([
         { ...quadratic, preset: 'expression', expression: 'x', parameters: [], latex },
       ]));

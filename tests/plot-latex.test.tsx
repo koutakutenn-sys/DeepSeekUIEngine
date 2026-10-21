@@ -53,6 +53,7 @@ describe('function definition LaTeX display', () => {
     String.raw`\frac{1`, String.raw`\unknown{x}`, String.raw`\def\loop{\loop}\loop`,
     String.raw`\href{javascript:alert(1)}{x}`, String.raw`\includegraphics{https://example.invalid/image.png}`,
     String.raw`\htmlStyle{position:fixed}{x}`, String.raw`\textcolor{red}{x}`,
+    String.raw`\def1{x}1`, String.raw`\let1=x 1`, String.raw`\href1x`, String.raw`\red{x}`, String.raw`\grayA{x}`,
   ])('falls back to the working plain definition for unsupported or unsafe TeX %s', (latex) => {
     const { container } = renderFormula(latex);
     expect(container.querySelector('.plot-formula')?.textContent).toBe('y = a*sin(x)');
