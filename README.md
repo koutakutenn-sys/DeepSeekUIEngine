@@ -49,6 +49,8 @@ v0.3.2 支持让模型通过可选 `latex` 字段排版函数定义，例如 `"l
 
 ## P1 常用富 UI（v0.3）
 
+当前开发分支还支持每项指标的 `color`（`#RGB` / `#RRGGBB`），改变数值和强调线；卡片背景继续跟随主题。可以要求“用绿色数值显示这个指标”。新增的 `svg` 区块允许模型绘制静态示意图，例如“用 SVG 画流程图，包含文字、渐变和箭头”。图形经本地 DOMPurify 与静态白名单处理后由浏览器原生渲染；脚本、事件、外链、图片、任意 CSS、动画和过滤器不支持，非法或超限图形保留原文。字段示例及限制见[协议](docs/protocol.md#svg静态示意图)。旧会话需重新提供格式说明或新建会话启用 UI。
+
 v0.3 新增以下组件：
 
 实现范围、自动化测试结果及人工验收状态记录在维护者本地保留的 P1 验证记录中（不随仓库分发）。
@@ -78,6 +80,7 @@ v0.3 新增以下组件：
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 数学表达式的区间运算，供函数图的区间采样使用 |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑块数值的十进制步进与吸附计算 |
 | [KaTeX](https://github.com/KaTeX/KaTeX) | 将可选 LaTeX 函数定义转换为原生 MathML；不加载外部字体 |
+| [DOMPurify](https://github.com/cure53/DOMPurify) | 清洗模型提供的静态 SVG；再经本项目的白名单及资源边界校验 |
 | [Zod](https://github.com/colinhacks/zod) | DSUI 声明式数据的严格结构校验及 JSON Schema 导出 |
 
 DSUI 协议、安全边界、官方页面适配、原文回退、主题样式，以及卡片、标签页、折叠面板和控件适配代码由本项目实现。进度条使用浏览器原生 `progress` 元素；标签页和折叠面板使用 React 按钮与 ARIA 关系，当前未接入 Radix UI 或 shadcn/ui。P1 新能力的发布状态见上节。
@@ -108,7 +111,7 @@ function-plot 自动化验证覆盖 32 个初等函数案例、已知数学坐�
 - 仅在 `https://chat.deepseek.com/*` 自动运行，只申请 `storage` 权限，仅持久保存模式。
 - 不读取认证 Cookie、不获取登录凭据、不保存聊天、不上传聊天到第三方，不访问内部 API。
 - 不拦截网络请求；在官方输入框和页面 DOM 上工作。
-- 脚本和样式均随扩展打包，不加载远程代码，不执行模型提供的 HTML/JavaScript；所有文本经过 React 转义。
+- 脚本和样式均随扩展打包，不加载远程代码，不执行模型提供的 HTML/JavaScript；普通文本经过 React 转义，svg 字段单独清洗和校验后才挂载原生 SVG。
 - 无效、超限、未知版本或组件渲染失败时保留原始 Markdown。未完成的流式 JSON 不隐藏原文。
 - 拒绝双向/不可见格式控制字符（保留合法 ZWJ/ZWNJ 连接符及完整合法的英格兰/苏格兰/威尔士旗帜 tag 序列）和危险控制字符，标签只接受单行文本；说明可保留换行。不会静默改写模型数据，非法内容整体回退原文。
 - DeepSeek 网页 DOM 并非公开稳定接口。官方改版可能需要调整适配器，不能以模拟页面测试代替真实兼容性检查。

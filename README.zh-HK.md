@@ -49,6 +49,8 @@ v0.3.2 支援讓模型透過可選的 `latex` 欄位排版函數定義，例如 
 
 ## P1 常用富 UI（v0.3）
 
+目前開發分支另支援每項指標的 `color`（`#RGB` / `#RRGGBB`），設定數值及強調線顏色，卡片背景繼續跟隨主題。新增 `svg` 區塊讓模型繪製包含文字、漸變及箭頭的靜態示意圖。本機 DOMPurify 清洗及靜態白名單檢查後，才交由瀏覽器原生 SVG 顯示；不支援腳本、事件、外部連結／圖片、任意 CSS、動畫或濾鏡，不合法或超出限制時保留原文。格式見[協定](docs/protocol.md#svg静态示意图)，舊對話需重新提供格式說明或在新對話啟用 UI。
+
 v0.3 新增以下元件：
 
 實作範圍、自動化測試結果及人工驗收狀態記錄在維護者本地保留的 P1 驗證記錄中（不隨倉庫分發）。
@@ -78,6 +80,7 @@ v0.3 新增以下元件：
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | 數學運算式的區間運算，供函數圖像的區間取樣使用 |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | 滑桿數值的十進制步進及對齊計算 |
 | [KaTeX](https://github.com/KaTeX/KaTeX) | 將可選的 LaTeX 函數定義轉為原生 MathML，不載入外部字型 |
+| [DOMPurify](https://github.com/cure53/DOMPurify) | 清洗模型提供的靜態 SVG，再通過本專案白名單及資源限制檢查 |
 | [Zod](https://github.com/colinhacks/zod) | DSUI 宣告式資料的嚴格結構驗證及 JSON Schema 匯出 |
 
 DSUI 協定、安全邊界、官方頁面配接、原文還原、主題樣式，以及卡片、分頁、摺疊面板與控制項配接程式碼由本專案實作。進度列使用瀏覽器原生 `progress` 元素；分頁及摺疊面板使用 React 按鈕與 ARIA 關係，目前未整合 Radix UI 或 shadcn/ui。P1 新功能的發佈狀態見上一節。
@@ -108,7 +111,7 @@ function-plot 自動化驗證涵蓋 32 個初等函數案例、已知數學座�
 - 只會在 `https://chat.deepseek.com/*` 自動執行，僅要求 `storage` 權限，只會持久儲存模式設定。
 - 不讀取認證 Cookie、不取得登入憑證、不儲存聊天、不將聊天上傳至第三方，也不存取內部 API。
 - 不攔截網絡請求；只在官方輸入框和頁面 DOM 上運作。
-- 指令碼及樣式均隨擴充功能打包，不會載入遠端程式碼或執行模型提供的 HTML/JavaScript；所有文字均經 React 跳脫處理。
+- 指令碼及樣式均隨擴充功能打包，不會載入遠端程式碼或執行模型提供的 HTML/JavaScript；一般文字經 React 跳脫處理，svg 欄位則獨立清洗及檢查後才掛載原生 SVG。
 - 如資料無效、超出上限、版本不明，或元件呈現失敗，會保留原始 Markdown。未完成的串流 JSON 不會隱藏原文。
 - 拒絕雙向／不可見格式控制字元（保留合法 ZWJ/ZWNJ 連接符及完整合法的英格蘭／蘇格蘭／威爾斯旗幟 tag 序列）及危險控制字元，標籤只接受單行文字；說明可保留換行。不會默默改寫模型資料，無效內容整段還原為原文。
 - DeepSeek 網頁 DOM 並非公開且穩定的介面。官方改版後可能需要調整配接器，不能以模擬頁面測試代替真實相容性檢查。

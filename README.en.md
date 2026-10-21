@@ -49,6 +49,8 @@ v0.3.2 accepts an optional `latex` field for typeset function definitions, for e
 
 ## P1 rich UI (v0.3)
 
+The current development branch also accepts per-item metric `color` (`#RGB` / `#RRGGBB`) for the value and accent border, with theme backgrounds preserved. A new `svg` block lets the model draw static diagrams with text, gradients and arrows. Local DOMPurify sanitization and a strict static allowlist precede native SVG rendering. Scripts, events, external links/images, arbitrary CSS, animation and filters are unsupported; invalid or oversized diagrams retain the original source. See the [protocol](docs/protocol.md#svg静态示意图). Reintroduce the updated instructions or enable UI in a new chat.
+
 Version v0.3 adds the following components.
 
 Scope, automated test results, and manual acceptance status are recorded in a maintainer-local P1 validation record that is not distributed with this repository.
@@ -78,6 +80,7 @@ The current source uses the following main runtime libraries. See `package-lock.
 | [interval-arithmetic](https://github.com/mauriciopoppe/interval-arithmetic) | Interval operations for mathematical expressions used by function-plot's interval sampling |
 | [decimal.js](https://github.com/MikeMcl/decimal.js) | Decimal slider stepping and snapping calculations |
 | [KaTeX](https://github.com/KaTeX/KaTeX) | Converts optional LaTeX function definitions to native MathML without external fonts |
+| [DOMPurify](https://github.com/cure53/DOMPurify) | Sanitizes model-provided static SVG before this project's allowlist and resource checks |
 | [Zod](https://github.com/colinhacks/zod) | Strict validation of declarative DSUI data and JSON Schema export |
 
 This project implements the DSUI protocol, safety boundaries, official-page adapter, original-source fallback, theme styles, cards, tabs, accordions, and control adapters. Progress indicators use the browser's native `progress` element. Tabs and accordions use React buttons and ARIA relationships; Radix UI and shadcn/ui are not currently integrated. See the preceding section for the release status of P1 features.
@@ -108,7 +111,7 @@ Code entry points: `src/protocol.ts` (validation), `src/prompt.ts` (protocol ins
 - Runs automatically only on `https://chat.deepseek.com/*`, requests only the `storage` permission, and persistently stores only the selected mode.
 - Does not read authentication cookies, obtain login credentials, save chats, upload chats to third parties, or access internal APIs.
 - Does not intercept network requests; it operates through the official input and page DOM.
-- Scripts and styles are bundled locally. The extension loads no remote code and executes no model-provided HTML or JavaScript. React escapes all text.
+- Scripts and styles are bundled locally. The extension loads no remote code and executes no model-provided HTML or JavaScript. React escapes ordinary text; the svg field is separately sanitized and checked before native SVG mounting.
 - Invalid, oversized, unknown-version, or failed components keep the original Markdown. Incomplete streaming JSON never hides the original content.
 - Bidirectional/invisible formatting controls are rejected, except legitimate ZWJ/ZWNJ joiners and the complete RGI subdivision-flag tag sequences (England, Scotland, Wales); unsafe control characters are also rejected. Labels must be single-line; descriptions may retain line breaks. Invalid data falls back to the original source without silent rewriting.
 - The DeepSeek page DOM is not a public, stable interface. Site updates may require adapter changes; fixture tests cannot replace real-site compatibility checks.
