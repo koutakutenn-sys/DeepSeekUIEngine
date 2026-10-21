@@ -80,6 +80,18 @@ async function showP1(blocks: unknown[]) {
   await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload(blocks));
 }
 
+test('LaTeX activation sends a complete formula example that the actual extension can render', async () => {
+  await selectMode(/Auto/);
+  await page.goto('https://chat.deepseek.com/a/chat/s/latex-prompt');
+  await page.getByRole('button', { name: '启用 UI', exact: true }).click();
+  await expect(page.locator('#sent')).toContainText('function_plot完整JSON示例：');
+  const example = (await page.locator('#sent').textContent())!.match(/^function_plot完整JSON示例：(.+)$/m)![1];
+  expect(JSON.parse(example).blocks[0].latex).toBe(String.raw`y=a\sin x`);
+  await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, example);
+  await expect(page.locator('.plot-formula math')).toBeVisible();
+  await expect(page.locator('.plot-formula math annotation')).toHaveText(String.raw`y=a\sin x`);
+});
+
 test('LaTeX function definitions render offline in native MathML and retain slider interaction on narrow dark screens', async ({}, testInfo) => {
   const requests: string[] = [];
   const record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };

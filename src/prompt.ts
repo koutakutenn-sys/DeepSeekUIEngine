@@ -4,6 +4,13 @@ export function isMode(value: unknown): value is Mode {
   return value === 'off' || value === 'auto' || value === 'force';
 }
 
+const functionPlotExample = { protocol: 'dsui', version: 1, blocks: [{
+  id: 'sine-example', type: 'function_plot', title: '正弦函数示例', preset: 'expression',
+  expression: 'a*sin(x)', latex: String.raw`y=a\sin x`,
+  parameters: [{ key: 'a', label: '振幅 a', value: 1, min: -5, max: 5, step: 0.1 }],
+  viewport: { xMin: -8, xMax: 8, yMin: -8, yMax: 8 },
+}] };
+
 const guide = String.raw`保留正常文字回答，按需另附一个 dsui Markdown 代码块，JSON 为 {"protocol":"dsui","version":1,"blocks":[...]}。不得编造数据，不输出 HTML/JS；没有可靠数据就用文字说明。
 同一回答（包括多个代码块）最多3个顶层区块、12个总区块（含容器和全部子区块）、3个function_plot；全部区块id全局唯一，id为1-64位字母数字下划线或连字符，title为短标题。每个JSON代码块不超过100000字符。区块只能用以下字段：
 metric_grid: {id,type:"metric_grid",title,items:[{label,value,unit?,change?}]}，最多12项，value为文本或有限数字，unit/change为文本。
@@ -17,8 +24,9 @@ progress: {id,type:"progress",title,value,label?,description?}，value为0-100�
 info_card: {id,type:"info_card",title,description,tone?}，description非空，tone仅neutral/info/success/warning。
 comparison: {id,type:"comparison",title,items:[{label,description,features?,highlight?}]}，2-4个方案，description非空，features为最多8个短文本，highlight为布尔值。
 tabs: {id,type:"tabs",title,defaultTab?,items:[{id,label,blocks:[...]}]}；accordion: {id,type:"accordion",title,defaultOpen?,items:[{id,label,blocks:[...]}]}。两种容器各1-6项，项id在本容器内唯一；每项1-3个非容器区块，禁止嵌套tabs/accordion。defaultTab只能为已有项id，省略选第一项；defaultOpen为不重复的已有项id数组，省略全部关闭。交互仅浏览器本地切换，不带动作或绑定。
-function_plot: {id,type:"function_plot",title,preset:"expression",expression:"a*sin(x)",parameters:[{key:"a",label:"振幅 a",value:1,min:-5,max:5,step:0.1}],viewport:{xMin:-8,xMax:8,yMin:-8,yMax:8}}。绘制实数 y=f(x)，expression最长256字符、最多64个语法节点、嵌套深度≤16。只用 x、常数 pi/e、已声明参数 a/b/c/d/p/q（最多6个，无参数时传[]），支持 + - * / ^、括号、sin/cos/tan/asin/acos/atan/sinh/cosh/tanh/exp/log/ln/log10/log2/sqrt/cbrt/abs，函数仅单参数；log/ln为自然对数，角度为弧度，负数立方根用cbrt(x)。不得传JS、赋值、对象、数组、条件表达式、样式、URL或采样点。兼容旧preset:"quadratic"（不传expression，parameters恰好a/b/c，表示a*x^2+b*x+c）。value/min/max绝对值≤10000，min≤value≤max，max-min≥0.000001，step在0.000001至20000之间；视口边界绝对值≤1000000，各轴跨度0.001至1000000；滑块由浏览器本地重绘。
-function_plot两种preset均可选latex，建议用它排版函数定义，例如JSON字段 "latex":"y=a\\sin x"。latex为1-1024字符的非空单行LaTeX数学内容，不带$或其他定界符；必须与实际函数一致，参数保留符号形式。它只用于显示，计算仍使用expression或quadratic及滑块当前值；不要在expression中写LaTeX。仅数学排版，禁止链接、图像、HTML、颜色/样式、宏定义和外部资源。LaTeX解析失败时显示普通函数定义，省略时保留原显示。
+function_plot: {id,type:"function_plot",title,preset:"expression",expression:"a*sin(x)",latex:"y=a\\sin x",parameters:[{key:"a",label:"振幅 a",value:1,min:-5,max:5,step:0.1}],viewport:{xMin:-8,xMax:8,yMin:-8,yMax:8}}。绘制实数 y=f(x)，expression最长256字符、最多64个语法节点、嵌套深度≤16。只用 x、常数 pi/e、已声明参数 a/b/c/d/p/q（最多6个，无参数时传[]），支持 + - * / ^、括号、sin/cos/tan/asin/acos/atan/sinh/cosh/tanh/exp/log/ln/log10/log2/sqrt/cbrt/abs，函数仅单参数；log/ln为自然对数，角度为弧度，负数立方根用cbrt(x)。不得传JS、赋值、对象、数组、条件表达式、样式、URL或采样点。兼容旧preset:"quadratic"（不传expression，parameters恰好a/b/c，表示a*x^2+b*x+c）。value/min/max绝对值≤10000，min≤value≤max，max-min≥0.000001，step在0.000001至20000之间；视口边界绝对值≤1000000，各轴跨度0.001至1000000；滑块由浏览器本地重绘。
+function_plot默认同时提供latex排版函数定义；两种preset都支持，字段可省略仅用于兼容旧数据或无法正确排版时回退。latex为1-1024字符的非空单行LaTeX数学内容，不带$或其他定界符；必须与实际函数一致，参数保留符号形式。它只用于显示，计算仍使用expression或quadratic及滑块当前值；不要在expression中写LaTeX。仅数学排版，禁止链接、图像、HTML、颜色/样式、宏定义和外部资源。LaTeX解析失败时显示普通函数定义。
+function_plot完整JSON示例：${JSON.stringify(functionPlotExample)}
 title/label/date及features的文本不超过160字符，表格文本值不超过500字符，description不超过2000字符，unit/xUnit/yUnit不超过40字符。标题/标签/单位等短文本必须单行，说明和表格文本可换行；不得含双向、不可见格式或危险控制字符，正常emoji和拼写用的ZWJ/ZWNJ连接符除外。key不得为__proto__/prototype/constructor。不添加额外字段、HTML、JS、CSS、URL、事件、网络请求或跨区块共享状态。`;
 
 function suffix(mode: Exclude<Mode, 'off'>): string {

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { BlockView } from '../src/components/BlockView';
 import { parsePayload } from '../src/protocol';
+import { createEnablePrompt } from '../src/prompt';
 import { payload, quadratic } from './fixtures';
 import type { Bounds } from '../src/math/plot-expression';
 
@@ -13,6 +14,16 @@ function renderFormula(latex: string, overrides = {}) {
 }
 
 describe('function definition LaTeX display', () => {
+  it('renders the complete LaTeX example actually supplied in the activation prompt', () => {
+    const example = createEnablePrompt('auto').match(/^function_plot完整JSON示例：(.+)$/m)?.[1];
+    expect(example).toBeDefined();
+    const parsed = parsePayload(example!);
+    expect(parsed).not.toBeNull();
+    const { container } = render(<BlockView block={parsed!.blocks[0]} />);
+    expect(container.querySelector('.plot-formula math')).not.toBeNull();
+    expect(container.querySelector('math annotation')?.textContent).toBe(String.raw`y=a\sin x`);
+    expect(container.querySelector('[data-plot-curve]')?.getAttribute('d')).toMatch(/M /);
+  });
   it.each(['quadratic', 'expression'])('accepts optional display LaTeX in %s while retaining the original payload', (preset) => {
     const block = preset === 'quadratic' ? quadratic : expressionPlot;
     const latex = String.raw`y=\frac{x^2}{\sqrt{x+1}}`;
