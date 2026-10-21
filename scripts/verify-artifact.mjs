@@ -114,8 +114,9 @@ export function verifyScript(source, { name, standalone }) {
     }
     if (ts.isPropertyAccessExpression(node)) assert(node.getText(syntax) !== 'process.env.NODE_ENV', 'Resolve NODE_ENV during build');
     if (ts.isIdentifier(node) && !isPropertyName(node)) {
-      const safeIntrinsic = node.text === 'Function' && ts.isPropertyAccessExpression(node.parent)
-        && node.parent.expression === node && ['prototype', 'toString'].includes(node.parent.name.text);
+      const safeIntrinsic = node.text === 'Function' && ((ts.isPropertyAccessExpression(node.parent)
+        && node.parent.expression === node && ['prototype', 'toString'].includes(node.parent.name.text))
+        || (ts.isBinaryExpression(node.parent) && node.parent.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword && node.parent.right === node));
       assert(safeIntrinsic || (!['eval', 'Function'].includes(node.text) && !network.has(node.text)), `${name}: forbidden capability ${node.text}`);
     }
     if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {

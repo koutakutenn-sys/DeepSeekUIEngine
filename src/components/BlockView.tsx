@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { Block } from '../protocol';
 import { FunctionPlot } from './FunctionPlot';
@@ -6,6 +6,7 @@ import { display } from './display';
 import { DataChart } from './Charts';
 import { CardContent } from './Cards';
 import { Panels } from './Panels';
+import { SvgView } from './SvgView';
 
 const cellValue = (row: Extract<Block, { type: 'data_table' }>['rows'][number], key: string) => Object.hasOwn(row, key) ? row[key] : null;
 
@@ -67,7 +68,9 @@ export function BlockView({ block, nested = false }: { block: Block; nested?: bo
     {(block.type === 'line_chart' || block.type === 'pie_chart' || block.type === 'scatter_chart') && <DataChart block={block} />}
     {(block.type === 'progress' || block.type === 'info_card' || block.type === 'comparison') && <CardContent block={block} nested={nested} />}
     {block.type === 'function_plot' && <FunctionPlot block={block} />}
-    {block.type === 'metric_grid' && <div className="metric-grid">{block.items.map((item, index) => <div key={index} className="metric">
+    {block.type === 'svg' && <SvgView source={block.svg} title={block.title} />}
+    {block.type === 'metric_grid' && <div className="metric-grid">{block.items.map((item, index) => <div key={index} className="metric"
+      data-custom-color={item.color ? '' : undefined} style={item.color ? { '--metric-color': item.color } as CSSProperties : undefined}>
       <div className="metric-label">{item.label}</div>
       <div className="metric-value">{display(item.value)}{item.unit && <span className="metric-unit">{item.unit}</span>}</div>
       {item.change && <div className="metric-change">{item.change}</div>}
