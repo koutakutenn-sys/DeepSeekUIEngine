@@ -3,6 +3,7 @@ import functionPlot, { Chart, type FunctionPlotOptions, type FunctionPlotDatum }
 import type { FunctionPlotBlock } from '../protocol';
 import { createPlotEvaluator, type Bounds } from '../math/plot-expression';
 import { curveDescription, formula, panViewport, plotNumber, sliderValue, sliderKeyValue, zoomViewport, type Coefficients, type Viewport } from './function-plot';
+import { PlotFormula } from './PlotFormula';
 
 const HEIGHT = 290;
 const offsetFor = (min: number, max: number) => Math.max(Math.abs(min), Math.abs(max)) > (max - min) * 100 ? min : 0;
@@ -109,7 +110,7 @@ export function FunctionPlot({ block }: { block: FunctionPlotBlock }) {
   };
   const offsetX = offsetFor(view.xMin, view.xMax); const offsetY = offsetFor(view.yMin, view.yMax);
   return <div className="function-plot">
-    <output className="plot-formula" aria-live="polite" aria-atomic="true">{block.preset === 'quadratic' ? formula(parameters as Coefficients) : `y = ${block.expression}`}</output>
+    <PlotFormula latex={block.latex} plain={block.preset === 'quadratic' ? formula(parameters as Coefficients) : `y = ${block.expression}`} />
     <p id={description} className="plot-description">{block.preset === 'quadratic' ? curveDescription(parameters as Coefficients) : '初等函数图像（实数域，角度单位为弧度）。'}</p>
     <p id={help} className="plot-help">拖动画布平移，滚轮或双指缩放；聚焦坐标系后用方向键平移、+/− 缩放、Home 复位。</p>
     <div ref={target} className="plot-canvas" role="application" tabIndex={0}

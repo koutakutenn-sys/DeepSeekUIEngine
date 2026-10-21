@@ -67,7 +67,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => { await context?.close(); });
 test.afterEach(async ({}, testInfo) => {
-  if (testInfo.title.startsWith('P1') || testInfo.title.startsWith('security hardening')) {
+  if (testInfo.title.startsWith('P1') || testInfo.title.startsWith('security hardening') || testInfo.title.startsWith('LaTeX') || testInfo.title.startsWith('SVG')) {
     await selectMode(/Auto/);
     await page.setViewportSize({ width: 1024, height: 1000 });
     await page.goto('https://chat.deepseek.com/');
@@ -79,6 +79,127 @@ async function showP1(blocks: unknown[]) {
   await page.goto('https://chat.deepseek.com/a/chat/s/p1-fixture');
   await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, payload(blocks));
 }
+
+test('LaTeX activation sends a complete formula example that the actual extension can render', async () => {
+  await selectMode(/Auto/);
+  await page.goto('https://chat.deepseek.com/a/chat/s/latex-prompt');
+  await page.getByRole('button', { name: '启用 UI', exact: true }).click();
+  await expect(page.locator('#sent')).toContainText('function_plot完整JSON示例：');
+  const example = (await page.locator('#sent').textContent())!.match(/^function_plot完整JSON示例：(.+)$/m)![1];
+  expect(JSON.parse(example).blocks[0].latex).toBe(String.raw`y=a\sin x`);
+  await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, example);
+  await expect(page.locator('.plot-formula math')).toBeVisible();
+  await expect(page.locator('.plot-formula math annotation')).toHaveText(String.raw`y=a\sin x`);
+});
+
+test('SVG activation example and custom metric colors render in the actual extension without requests', async ({}, testInfo) => {
+  await selectMode(/Auto/); await page.goto('https://chat.deepseek.com/a/chat/s/svg-prompt');
+  await page.getByRole('button', { name: '启用 UI', exact: true }).click();
+  await expect(page.locator('#sent')).toContainText('svg完整JSON示例：');
+  const example = JSON.parse((await page.locator('#sent').textContent())!.match(/^svg完整JSON示例：(.+)$/m)![1]);
+  const requests: string[] = [], record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };
+  page.on('request', record);
+  try {
+    await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([
+      { ...metrics, items: [{ label: '绿色指标', value: 42, color: '#45b989' }, { label: '默认指标', value: 7 }] },
+      example.blocks[0], { ...example.blocks[0], id: 'svg-second' },
+    ]));
+    await expect(page.locator('.svg-canvas > svg')).toHaveCount(2);
+    const metric = page.locator('.metric').first();
+    await expect(metric.locator('.metric-value')).toHaveCSS('color', 'rgb(69, 185, 137)');
+    await expect(metric).toHaveCSS('border-left-color', 'rgb(69, 185, 137)');
+    const firstId = await page.locator('.svg-canvas linearGradient').nth(0).getAttribute('id');
+    expect(await page.locator('.svg-canvas linearGradient').nth(1).getAttribute('id')).not.toBe(firstId);
+    await page.setViewportSize({ width: 390, height: 1000 });
+    await page.evaluate(() => { document.documentElement.classList.add('dark'); });
+    await expect(page.locator('[data-dsui-host]').first()).toHaveAttribute('data-theme', 'dark');
+    await expect(metric.locator('.metric-value')).toHaveCSS('color', 'rgb(69, 185, 137)');
+    expect(await metric.evaluate((node) => getComputedStyle(node).backgroundColor)).toBe(await page.locator('.metric').nth(1).evaluate((node) => getComputedStyle(node).backgroundColor));
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(requests).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath('metric-svg-dark-narrow.png'), fullPage: true });
+  } finally { page.off('request', record); }
+});
+
+test('SVG sanitization removes active content, rejects external paints and restores the full source on failure', async () => {
+  await showP1([]);
+  const requests: string[] = [], record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };
+  page.on('request', record);
+  const wrap = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">${body}<rect width="100" height="60" fill="#45b989"/></svg>`;
+  try {
+    const hostile = wrap('<script>document.documentElement.dataset.svgExecuted="yes"</script><foreignObject><img xmlns="http://www.w3.org/1999/xhtml" src="https://example.invalid/a"/></foreignObject><image href="https://example.invalid/a"/><use href="#anything"/><style>@import "https://example.invalid/a";</style><rect onload="document.documentElement.dataset.svgExecuted=\'yes\'" width="20" height="20"/>');
+    await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([{ id: 'clean-svg', type: 'svg', title: '图', svg: hostile }]));
+    await expect(page.locator('.svg-canvas > svg')).toBeVisible();
+    await expect(page.locator('.svg-canvas script, .svg-canvas foreignObject, .svg-canvas image, .svg-canvas use, .svg-canvas style, .svg-canvas [onload]')).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.dataset.svgExecuted)).toBeUndefined();
+    for (const svg of [
+      wrap('<rect fill="url(https://example.invalid/a.svg#p)"/>'),
+      wrap('<g>'.repeat(16) + '<rect/>' + '</g>'.repeat(16)), wrap('<rect/>'.repeat(500)),
+      wrap('<text>误导&#x202e;文字</text>'), wrap('<rect width="1 2" height="3"/>'), wrap('<path d="z"/>'),
+      wrap('<defs><marker id="leaf"><rect width="1" height="1"/></marker><marker id="outer"><polyline points="0,0 1,1 2,2" marker-mid="url(#leaf)"/></marker></defs><path d="M0 0L1 1" marker-end="url(#outer)"/>'),
+    ]) {
+      const source = payload([infoCard, { id: 'bad-svg', type: 'svg', title: '图', svg }]);
+      await page.locator('#stream').evaluate((node, text) => { node.textContent = text; }, source);
+      await expect(page.locator('[data-dsui-host]')).toHaveCount(0);
+      await expect(page.locator('#stream')).toBeVisible();
+      expect(await page.locator('#stream').textContent()).toBe(source);
+    }
+    expect(requests).toEqual([]);
+  } finally { page.off('request', record); }
+});
+
+test('LaTeX function definitions render offline in native MathML and retain slider interaction on narrow dark screens', async ({}, testInfo) => {
+  const requests: string[] = [];
+  const record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };
+  const latex = String.raw`y=a\frac{\sin x}{\sqrt{x^2+1}}`;
+  await showP1([]);
+  page.on('request', record);
+  try {
+    await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([
+      { ...quadratic, preset: 'expression', expression: 'a*sin(x)/sqrt(x^2+1)', latex, parameters: [quadratic.parameters[0]] },
+    ]));
+    const math = page.locator('.plot-formula math');
+    await expect(math).toBeVisible();
+    await expect(math.locator('mfrac')).toHaveCount(1);
+    await expect(math.locator('msqrt')).toHaveCount(1);
+    const curve = page.locator('[data-plot-curve]');
+    const before = await curve.getAttribute('d');
+    await page.getByRole('slider', { name: 'a', exact: true }).press('ArrowRight');
+    await expect(curve).not.toHaveAttribute('d', before!);
+    await expect(math.locator('annotation')).toHaveText(latex);
+    await page.getByRole('button', { name: '复位参数', exact: true }).click();
+    await expect(curve).toHaveAttribute('d', before!);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => { document.documentElement.classList.add('dark'); });
+    await expect(page.locator('[data-dsui-host]').first()).toHaveAttribute('data-theme', 'dark');
+    await expect(math).toBeVisible();
+    const bounds = await page.locator('.plot-formula').boundingBox();
+    expect(bounds!.width).toBeLessThan(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(requests).toEqual([]);
+    await page.screenshot({ path: testInfo.outputPath('latex-dark-narrow.png') });
+  } finally { page.off('request', record); }
+});
+
+test('LaTeX failures retain a working curve and never create remote resources or clickable links', async () => {
+  const requests: string[] = [];
+  const record = (request: import('@playwright/test').Request) => { requests.push(request.url()); };
+  await showP1([]);
+  page.on('request', record);
+  try {
+    for (const latex of [String.raw`\frac{1`, String.raw`\href{https://example.invalid}{x}`,
+      String.raw`\includegraphics{https://example.invalid/image.png}`, String.raw`\htmlStyle{position:fixed}{x}`,
+      String.raw`\def1{x}1`, String.raw`\href1x`, String.raw`\red{x}`, String.raw`\grayA{x}`]) {
+      await page.locator('#stream').evaluate((node, source) => { node.textContent = source; }, payload([
+        { ...quadratic, preset: 'expression', expression: 'x', parameters: [], latex },
+      ]));
+      await expect(page.locator('.plot-formula')).toHaveText('y = x');
+      await expect(page.locator('.plot-formula math, .plot-formula a, .plot-formula img, .plot-formula iframe')).toHaveCount(0);
+      await expect(page.locator('[data-plot-curve]')).toHaveAttribute('d', /M /);
+    }
+    expect(requests).toEqual([]);
+  } finally { page.off('request', record); }
+});
 
 test('security hardening: popup version follows the installed extension manifest', async () => {
   const manifest = JSON.parse(await readFile('public/manifest.json', 'utf8'));

@@ -34,7 +34,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## KaTeX 0.19.0
+
+Project: [https://github.com/KaTeX/KaTeX](https://github.com/KaTeX/KaTeX)
+
+Copyright (c) 2013-2020 Khan Academy and other contributors
+
+License: MIT License. The complete published license and retained source
+attributions are included in the generated `THIRD_PARTY_NOTICES.txt`.
+The published bundle also credits React-derived utilities under Apache 2;
+that attribution is preserved alongside the distribution's Apache 2.0 text.
+
 ## Complete distribution notices
+
+DOMPurify 3.4.17 ([upstream](https://github.com/cure53/DOMPurify)) is included
+for SVG sanitization. Published attribution: (c) Cure53 and other contributors.
+It is dual-licensed under MPL-2.0 or Apache-2.0; the complete published LICENSE
+and retained source attribution are preserved in `THIRD_PARTY_NOTICES.txt`.
 
 The build preserves the production dependencies' license texts, nested notices,
 and retained source attributions in `THIRD_PARTY_NOTICES.txt` in the distribution.

@@ -2,6 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { verifyScript } from './verify-artifact.mjs';
 
+for (const code of [0xfdd0, 0xfffe, 0xffff, 0x1ffff, 0x10ffff]) test(`rejects literal noncharacter U+${code.toString(16)} that Chrome refuses in extension scripts`, () => {
+  assert.throws(() => verifyScript(`const token = "${String.fromCodePoint(code)}"`, { name: 'content.js', standalone: true }), /noncharacter/);
+});
+test('allows JavaScript escapes for noncharacter sentinel values', () => {
+  verifyScript(String.raw`const token = "\uFFFF"; const label = "中文";`, { name: 'content.js', standalone: true });
+});
+test('allows read-only instanceof Function checks without allowing dynamic constructors', () => {
+  for (const standalone of [true, false]) {
+    assert.doesNotThrow(() => verifyScript('function inspect(value) { return value instanceof Function; }', { name: 'type-check.js', standalone }));
+    assert.throws(() => verifyScript('value instanceof Function("return 1")', { name: 'constructor.js', standalone }), /capability Function/);
+  }
+});
+
 for (const source of [
   'eval("x")', 'new Function("return 1")', 'const F = Function; new F("return 1")', 'window.eval("x")', 'globalThis["eval"]("x")',
   '(0, eval)("x")', 'eval.call(null,"x")', 'const execute = globalThis.Function; execute("return 1")()',

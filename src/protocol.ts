@@ -1,15 +1,9 @@
 import { z } from 'zod';
 import { validateExpression } from './math/plot-expression.ts';
+import { hasUnsafeText } from './text-safety.ts';
 
 z.config({ jitless: true });
 
-// Keep legitimate emoji/Persian joiners; reject other hidden format controls and unsafe C0/C1 controls.
-const unsafeText = /(?:(?![\u200c\u200d])\p{Cf})|[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u;
-// Unicode RGI_Emoji_Tag_Sequence has exactly three members (England, Scotland, Wales); their subdivision
-// letters are Cf tag characters. Only these exact, complete sequences are exempted from the Cf scan below.
-const rgiSubdivisionFlag = /\u{1F3F4}\u{E0067}\u{E0062}(?:\u{E0065}\u{E006E}\u{E0067}|\u{E0073}\u{E0063}\u{E0074}|\u{E0077}\u{E006C}\u{E0073})\u{E007F}/gu;
-// Strip those whole sequences only for the check; the validated payload is never rewritten or normalized.
-const hasUnsafeText = (value: string) => unsafeText.test(value.replace(rgiSubdivisionFlag, ''));
 const lineBreak = /[\r\n\t\u2028\u2029]/u;
 const boundedText = (max: number, multiline = false) => z.string().max(max)
   .refine((value) => !hasUnsafeText(value) && (multiline || !lineBreak.test(value)), { message: 'Unsafe text controls or multiline label' });
@@ -26,6 +20,7 @@ const metricSchema = z.strictObject({
   items: z.array(z.strictObject({
     label: shortText, value: z.union([boundedText(160), number]),
     unit: boundedText(40).optional(), change: boundedText(80).optional(),
+    color: z.string().regex(/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i).optional(),
   })).min(1).max(12),
 });
 const chartSchema = z.strictObject({
@@ -62,8 +57,10 @@ const plotParameter = z.strictObject({
 const viewportSchema = z.strictObject({ xMin: coordinate, xMax: coordinate, yMin: coordinate, yMax: coordinate })
   .refine((v) => [v.xMax - v.xMin, v.yMax - v.yMin].every((span) => span >= PLOT_LIMITS.minSpan && span <= PLOT_LIMITS.maxSpan),
     { message: 'Viewport spans must be between 0.001 and 1000000' });
+const plotLatex = boundedText(1024).min(1).refine((value) => value.trim().length > 0, { message: 'Empty LaTeX definition' }).optional();
 const quadraticPlotSchema = z.strictObject({
   ...base, type: z.literal('function_plot'), preset: z.literal('quadratic'),
+  latex: plotLatex,
   parameters: z.array(plotParameter).length(3).refine((p) => new Set(p.map((entry) => entry.key)).size === 3 && p.every((entry) => ['a', 'b', 'c'].includes(entry.key)),
     { message: 'Parameters must contain exactly a, b and c' }),
   viewport: viewportSchema,
@@ -71,6 +68,7 @@ const quadraticPlotSchema = z.strictObject({
 const expressionPlotSchema = z.strictObject({
   ...base, type: z.literal('function_plot'), preset: z.literal('expression'),
   expression: boundedText(256).min(1),
+  latex: plotLatex,
   parameters: z.array(plotParameter).max(6).refine((p) => new Set(p.map((entry) => entry.key)).size === p.length,
     { message: 'Parameters must be unique' }),
   viewport: viewportSchema,
@@ -116,8 +114,9 @@ const comparisonSchema = z.strictObject({
     features: z.array(shortText).max(8).optional(), highlight: z.boolean().optional(),
   })).min(2).max(4),
 });
+const svgSchema = z.strictObject({ ...base, type: z.literal('svg'), svg: boundedText(20_000, true).min(1) });
 const leafBlockSchema = z.discriminatedUnion('type', [metricSchema, chartSchema, tableSchema, timelineSchema,
-  functionPlotSchema, lineSchema, pieSchema, scatterSchema, progressSchema, infoSchema, comparisonSchema]);
+  functionPlotSchema, lineSchema, pieSchema, scatterSchema, progressSchema, infoSchema, comparisonSchema, svgSchema]);
 const panelItems = z.array(z.strictObject({
   id: base.id, label: shortText, blocks: z.array(leafBlockSchema).min(1).max(3),
 })).min(1).max(6).refine((items) => new Set(items.map((item) => item.id)).size === items.length,

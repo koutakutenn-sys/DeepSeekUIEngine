@@ -37,6 +37,12 @@ function isPropertyName(node) {
 }
 
 export function verifyScript(source, { name, standalone }) {
+  // Chrome's extension loader rejects literal Unicode noncharacters even when
+  // a permissive UTF-8 decoder accepts their bytes. Escaped JS sentinels are fine.
+  for (const character of source) {
+    const code = character.codePointAt(0);
+    assert(!((code >= 0xfdd0 && code <= 0xfdef) || (code & 0xffff) >= 0xfffe), `${name}: literal Unicode noncharacter`);
+  }
   const virtualFile = '/__dsui_bundle__.js';
   const syntax = ts.createSourceFile(virtualFile, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   assert.equal(syntax.parseDiagnostics.length, 0, `${name}: invalid JavaScript`);
@@ -108,8 +114,9 @@ export function verifyScript(source, { name, standalone }) {
     }
     if (ts.isPropertyAccessExpression(node)) assert(node.getText(syntax) !== 'process.env.NODE_ENV', 'Resolve NODE_ENV during build');
     if (ts.isIdentifier(node) && !isPropertyName(node)) {
-      const safeIntrinsic = node.text === 'Function' && ts.isPropertyAccessExpression(node.parent)
-        && node.parent.expression === node && ['prototype', 'toString'].includes(node.parent.name.text);
+      const safeIntrinsic = node.text === 'Function' && ((ts.isPropertyAccessExpression(node.parent)
+        && node.parent.expression === node && ['prototype', 'toString'].includes(node.parent.name.text))
+        || (ts.isBinaryExpression(node.parent) && node.parent.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword && node.parent.right === node));
       assert(safeIntrinsic || (!['eval', 'Function'].includes(node.text) && !network.has(node.text)), `${name}: forbidden capability ${node.text}`);
     }
     if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
